@@ -1,0 +1,45 @@
+version: '3'
+services:
+  frontend:
+    build: ./frontend
+    volumes:
+      - "./frontend/build:/app/build"
+    environment:
+      REACT_APP_HOST_MACHINE: VM_IP_ADDRESS 
+  nginx:
+    restart: always
+    build: ./nginx
+    ports:
+    - "80:80"
+    volumes:
+      - "./persisted_data/images:/images"
+      - "./frontend/build:/frontend/build"
+  image_processor:
+    #restart: always
+    build: ./image_processor
+    volumes:
+      - "./persisted_data/images:/app/image_processor/images:rw"
+    environment:
+      STORAGE_ACCOUNT_NAME: QUEUE_STORAGE_ACCOUNT_NAME 
+      STORAGE_ACCOUNT_KEY: QUEUE_STORAGE_ACCOUNT_KEY
+      IMAGE_PROCESSOR_QUEUE: ipqueue
+  api:
+    restart: always
+    build: ./api
+    ports:
+    - "5000:5000"
+    volumes:
+    - "./persisted_data/images:/app/api/images:rw"
+    environment:
+      STORAGE_ACCOUNT_NAME: QUEUE_STORAGE_ACCOUNT_NAME
+      STORAGE_ACCOUNT_KEY: QUEUE_STORAGE_ACCOUNT_KEY 
+      IMAGE_PROCESSOR_QUEUE: ipqueue
+  mysql-dev:
+    restart: always
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: blogapp
+    volumes:
+      - "./persisted_data/database/data:/var/lib/mysql:rw"
+#docker-compose exec mysql-dev mysql -uroot -ppassword blogapp
