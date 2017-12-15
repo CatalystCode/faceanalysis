@@ -1,3 +1,4 @@
+import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from .models import Base
@@ -14,7 +15,19 @@ def singleton(class_):
 class DatabaseManager:
     def __init__(self):
         #self.engine = create_engine("sqlite:///test.db", echo=True)
-        self.engine = create_engine('mysql+mysqlconnector://root:password@mysql-dev:3306/blogapp', pool_recycle=3600, echo=True)
+        mysql_user = os.environ['MYSQL_USER']
+        mysql_password = os.environ['MYSQL_PASSWORD']
+        mysql_container_name = os.environ['MYSQL_CONTAINER_NAME']
+        mysql_database = os.environ['MYSQL_DATABASE']
+        mysql_connector_str = 'mysql+mysqlconnector'
+        mysql_port = '3306'
+        engine_credential_str = "{}://{}:{}@{}:{}/{}".format(mysql_connector_str,
+                                                             mysql_user,
+                                                             mysql_password,
+                                                             mysql_container_name,
+                                                             mysql_port,
+                                                             mysql_database)
+        self.engine = create_engine(engine_credential_str, pool_recycle=3600, echo=True)
         self.Session = sessionmaker(bind=self.engine)
 
     def create_all_tables(self):

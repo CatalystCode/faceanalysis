@@ -2,7 +2,7 @@
 1. Create an Azure VM (preferably Ubuntu 16.04)
 2. Install Docker and Docker Compose
 3. Clone this repo
-4. Replace default environment variables in docker-compose.yml
+4. Replace default environment variables in environment_variables.yml
 5. From the directory containing docker-compose.yml run the command 'docker-compose build'
 6. Run the command 'docker-compose up'
 7. Once output stops printing, navigate to http://YOUR_VM_IP_ADDRESS
