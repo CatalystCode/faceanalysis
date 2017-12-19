@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy import Column, Integer, String, Float, Text, Boolean
+from sqlalchemy import Column, String, Float, Text
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -10,8 +10,6 @@ class OriginalImage(Base):
     __tablename__ = 'originalimages'
 
     img_id = Column(String(50), primary_key=True)
-    is_pending = Column(Boolean, default=False)
-
     cropped_imgs = relationship('CroppedImage', back_populates='original_img')
 
 class CroppedImage(Base):

@@ -34,6 +34,6 @@ services:
     restart: always
     image: mysql
     volumes:
-      - "./persisted_data/database/data:/var/lib/mysql:rw"
+      - "./persisted_data/database:/var/lib/mysql:rw"
     env_file:
       - ./environment_variables.env

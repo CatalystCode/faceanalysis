@@ -1,5 +1,5 @@
 import os
-from flask import Flask, Request, request, redirect, url_for
+from flask import Flask, Request
 from werkzeug.utils import secure_filename
 from flask_restful import Resource, Api, reqparse
 from .models.models import Match, OriginalImage, CroppedImage
@@ -8,14 +8,9 @@ import werkzeug
 from azure.storage.queue import QueueService
 
 app = Flask(__name__)
-
-# TODO: PUT MSG ON QUEUE
-# TODO: TEST MAX CONTENT LENGTH and SEE IF THESE VALUES ARE USED BESIDES IMGUPLOAD
-app.config['UPLOAD_FOLDER'] = '/app/api/images/input'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
+#app.config['UPLOAD_FOLDER'] = '/app/api/images/input'
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images'), 'input')
 api = Api(app)
-
 queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
                              account_key=os.environ['STORAGE_ACCOUNT_KEY'])
 queue_service.create_queue(os.environ['IMAGE_PROCESSOR_QUEUE'])
@@ -57,10 +52,10 @@ class CroppedImgMatchList(Resource):
                 'distances': distances}
 
 class CroppedImgListFromOriginalImgId(Resource):
-    def get(self, orig_img_id):
+    def get(self, img_id):
         session = DatabaseManager().get_session()
-        query = session.query(OriginalImage).filter(OriginalImage.img_id == orig_img_id).first()
-        imgs = list(set([cropped_img.img_id for cropped_img in query.cropped_imgs]))
+        query = session.query(CroppedImage).filter(CroppedImage.original_img_id == img_id)
+        imgs = list(set(cropped_img.img_id for cropped_img in query))
         session.close()
         return {'imgs': imgs}
 
@@ -73,9 +68,9 @@ class OriginalImgList(Resource):
         return {'imgs': imgs}
 
 class OriginalImgListFromCroppedImgId(Resource):
-    def get(self, crop_img_id):
+    def get(self, img_id):
         session = DatabaseManager().get_session()
-        query = session.query(CroppedImage).filter(CroppedImage.img_id == crop_img_id).first()
+        query = session.query(CroppedImage).filter(CroppedImage.img_id == img_id).first()
         imgs = [query.original_img_id]
         session.close()
         return {'imgs': imgs}
@@ -83,8 +78,8 @@ class OriginalImgListFromCroppedImgId(Resource):
 api.add_resource(ImgUpload, '/api/upload_image/', '/api/upload_image/<string:img_id>/')
 api.add_resource(CroppedImgMatchList, '/api/cropped_image_matches/<string:img_id>/')
 api.add_resource(OriginalImgList, '/api/original_images/')
-api.add_resource(OriginalImgListFromCroppedImgId, '/api/original_images/<string:crop_img_id>/')
-api.add_resource(CroppedImgListFromOriginalImgId, '/api/cropped_images/<string:orig_img_id>/')
+api.add_resource(OriginalImgListFromCroppedImgId, '/api/original_images/<string:img_id>/')
+api.add_resource(CroppedImgListFromOriginalImgId, '/api/cropped_images/<string:img_id>/')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)

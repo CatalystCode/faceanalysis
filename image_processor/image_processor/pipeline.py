@@ -40,8 +40,7 @@ class Pipeline:
     def _process_original_img(self, original_img_id, session):
         self._add_entry_to_session(OriginalImage,
                                    session,
-                                   img_id=original_img_id,
-                                   is_pending=True)
+                                   img_id=original_img_id)
 
         input_img_base_path = os.path.join(self.img_dir, 'input')
         fpath = "{input_img_base_path}/{img_id}.jpg".format(input_img_base_path=input_img_base_path,
