@@ -20,41 +20,28 @@ queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
                              account_key=os.environ['STORAGE_ACCOUNT_KEY'])
 queue_service.create_queue(os.environ['IMAGE_PROCESSOR_QUEUE'])
 
-#class ImgUpload(Resource):
-#    def post(self):
-#        parser = reqparse.RequestParser()
-#        parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
-#        args = parser.parse_args()
-#        file = args['file']
-#        if file and self._allowed_file(file.filename):
-#            filename = secure_filename(file.filename)
-#            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-#            img_id = file.filename[:-4]
-#            self._add_pending_face_img(img_id)
-#            queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'], img_id)
-#            return {'success': True}
-#
-#    def get(self, img_id):
-#        session = DatabaseManager().get_session()
-#        query = session.query(PendingFaceImage).filter(PendingFaceImage.original_img_id == img_id).all()
-#        session.close()
-#        return {'finished_processing': False} if len(query) else {'finished_processing': True}
-#
-#    def _add_pending_face_img(self, img_id):
-#        print("adding pending face image: ", img_id)
-#        db = DatabaseManager()
-#        session = db.get_session()
-#        query = session.query(PendingFaceImage).filter(PendingFaceImage.original_img_id == img_id).all()
-#        session.close()
-#        if len(query) == 0:
-#            session = db.get_session()
-#            pfi = PendingFaceImage(original_img_id=img_id)
-#            session.add(pfi)
-#            db.safe_commit(session)
-#
-#    def _allowed_file(self, filename):
-#        allowed_extensions = ['jpg']
-#        return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+class ImgUpload(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
+        args = parser.parse_args()
+        file = args['file']
+        if file and self._allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            img_id = file.filename[:-4]
+            queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'], img_id)
+            return {'success': True}
+
+    def get(self, img_id):
+        session = DatabaseManager().get_session()
+        query = session.query(OriginalImage).filter(OriginalImage.img_id == img_id).all()
+        session.close()
+        return {'finished_processing': True} if len(query) else {'finished_processing': False}
+
+    def _allowed_file(self, filename):
+        allowed_extensions = ['jpg']
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 class CroppedImgMatchList(Resource):
     def get(self, img_id):
@@ -93,9 +80,8 @@ class OriginalImgListFromCroppedImgId(Resource):
         session.close()
         return {'imgs': imgs}
 
-#api.add_resource(ImgUpload, '/api/upload_image/', '/api/upload_image/<string:img_id>/')
+api.add_resource(ImgUpload, '/api/upload_image/', '/api/upload_image/<string:img_id>/')
 api.add_resource(CroppedImgMatchList, '/api/cropped_image_matches/<string:img_id>/')
-#api.add_resource(OriginalImageMatchList, '/api/original_image_matches/<string:img_id>/')
 api.add_resource(OriginalImgList, '/api/original_images/')
 api.add_resource(OriginalImgListFromCroppedImgId, '/api/original_images/<string:crop_img_id>/')
 api.add_resource(CroppedImgListFromOriginalImgId, '/api/cropped_images/<string:orig_img_id>/')

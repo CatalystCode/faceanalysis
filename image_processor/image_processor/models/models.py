@@ -66,3 +66,9 @@ if __name__ == '__main__':
     session = Session()
     query = session.query(Match).filter(Match.this_cropped_img_id == '1').all()
     print(query[0].that_cropped_img.original_img.img_id)
+    session.close()
+
+    session = Session()
+    query = session.query(OriginalImage).filter(OriginalImage.img_id == '200').first()
+    imgs = list(set([cropped_img.img_id for cropped_img in query.cropped_imgs]))
+    print(imgs)
