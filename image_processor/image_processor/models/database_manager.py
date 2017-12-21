@@ -2,6 +2,7 @@ import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from .models import Base
+from ..log import get_logger
 
 def singleton(class_):
     instances = {}
@@ -27,8 +28,13 @@ class DatabaseManager:
                                                              mysql_container_name,
                                                              mysql_port,
                                                              mysql_database)
-        self.engine = create_engine(engine_credential_str, pool_recycle=3600, echo=True)
+        self.engine = create_engine(engine_credential_str,
+                                    pool_recycle=3600,
+                                    echo=True)
         self.Session = sessionmaker(bind=self.engine)
+        self.logger = get_logger(__name__,
+                                 'image_processor.log',
+                                 os.environ['LOGGING_LEVEL'])
 
     def create_all_tables(self):
         Base.metadata.create_all(self.engine)
@@ -39,13 +45,14 @@ class DatabaseManager:
     def safe_commit(self, session):
         try:
             session.commit()
-            print("session committed")
+            self.logger.debug("session committed")
         except:
             session.rollback()
-            print("session rolled back")
+            self.logger.debug("session rolled back")
         finally:
             session.close()
-            print("session closed")
+            self.logger.debug("session closed")
 
     def close_engine(self):
+        self.logger.debug("engine closed")
         self.engine.dispose()
