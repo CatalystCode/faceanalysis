@@ -2,6 +2,11 @@ version: '3'
 services:
   frontend:
     build: ./frontend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
     volumes:
         - "./frontend/build:/app/build"
     env_file:
@@ -9,6 +14,11 @@ services:
   nginx:
     restart: always
     build: ./nginx
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
     ports:
     - "80:80"
     volumes:
@@ -17,24 +27,37 @@ services:
   image_processor:
     #restart: always
     build: ./image_processor
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
     volumes:
       - "./persisted_data/images:/app/image_processor/images"
-      - "./persisted_data/logs:/app/image_processor/logs"
     env_file:
       - ./environment_variables.env
   api:
     restart: always
     build: ./api
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
     ports:
       - "5000:5000"
     volumes:
       - "./persisted_data/images:/app/api/images"
-      - "./persisted_data/logs:/app/api/logs"
     env_file:
       - ./environment_variables.env
   mysql:
     restart: always
-    image: mysql
+    build: ./mysql
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
     volumes:
       - "./persisted_data/database:/var/lib/mysql"
     env_file:
