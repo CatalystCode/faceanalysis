@@ -1,8 +1,8 @@
 import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from .models import Base
 from ..log import get_logger
+from sqlalchemy.ext.declarative import declarative_base
 
 def singleton(class_):
     instances = {}
@@ -16,6 +16,7 @@ def singleton(class_):
 class DatabaseManager:
     def __init__(self):
         #self.engine = create_engine("sqlite:///test.db", echo=True)
+        self.base = declarative_base()
         mysql_user = os.environ['MYSQL_USER']
         mysql_password = os.environ['MYSQL_PASSWORD']
         mysql_container_name = os.environ['MYSQL_CONTAINER_NAME']
@@ -37,7 +38,10 @@ class DatabaseManager:
                                  os.environ['LOGGING_LEVEL'])
 
     def create_all_tables(self):
-        Base.metadata.create_all(self.engine)
+        self.base.metadata.create_all(self.engine)
+
+    def get_base(self):
+        return self.base
 
     def get_session(self):
         return self.Session()

@@ -1,10 +1,45 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy import Column, String, Float, Text
+from sqlalchemy import Column, String, Float, Text, Integer
 from sqlalchemy.schema import ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+from .database_manager import DatabaseManager
+from passlib.apps import custom_app_context as pwd_context
+from itsdangerous import (TimedJSONWebSignatureSerializer
+                          as Serializer, BadSignature, SignatureExpired)
+import os
 
-Base = declarative_base()
+Base = DatabaseManager().get_base()
+SECRET_KEY = os.environ['FLASK_SECRET_KEY']
+
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    username = Column(String(32), index=True)
+    password_hash = Column(String(128))
+
+    def hash_password(self, password):
+        self.password_hash = pwd_context.encrypt(password)
+
+    def verify_password(self, password):
+        return pwd_context.verify(password, self.password_hash)
+
+    def generate_auth_token(self, expiration = 600):
+        s = Serializer(SECRET_KEY, expires_in = expiration)
+        return s.dumps({ 'id': self.id })
+
+    @staticmethod
+    def verify_auth_token(token):
+        s = Serializer(SECRET_KEY)
+        try:
+            data = s.loads(token)
+        except SignatureExpired:
+            return None # valid token, but expired
+        except BadSignature:
+            return None # invalid token
+        session = DatabaseManager().get_session()
+        user = session.query(User).filter(User.id == data['id']).first()
+        session.close()
+        return user
 
 class OriginalImage(Base):
     __tablename__ = 'originalimages'

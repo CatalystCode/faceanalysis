@@ -45,6 +45,6 @@ RUN pip install -r requirements.txt
 #    numpy \
 #    scipy \
 #    face_recognition
-
+RUN pip install passlib Flask-HTTPAuth flask-sqlalchemy
 EXPOSE 5000
 ENTRYPOINT ["/bin/bash", "/app/run.sh"]
