@@ -1,16 +1,5 @@
 version: '3'
 services:
-  frontend:
-    build: ./frontend
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "5"
-    volumes:
-        - "./frontend/build:/app/build"
-    env_file:
-      - ./environment_variables.env
   nginx:
     restart: always
     build: ./nginx
