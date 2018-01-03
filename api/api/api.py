@@ -1,4 +1,5 @@
 import os
+from requests import codes
 from flask import Flask, Request, abort, g
 from werkzeug.utils import secure_filename
 from flask_restful import Resource, Api, reqparse
@@ -10,12 +11,10 @@ from .log import get_logger
 from flask_httpauth import HTTPBasicAuth
 
 app = Flask(__name__)
-#app.config['UPLOAD_FOLDER'] = '/app/api/images/input'
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.join(
+app.config['UPLOAD_FOLDER'] = os.path.join(
                                            os.path.dirname(
                                            os.path.abspath(__file__)),
-                                           'images'),
-                                           'input')
+                                           'images')
 app.url_map.strict_slashes = False
 api = Api(app)
 queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
@@ -29,11 +28,9 @@ auth = HTTPBasicAuth()
 
 @auth.verify_password
 def verify_password(username_or_token, password):
-    # first try to authenticate by token
     user = User.verify_auth_token(username_or_token)
     session = DatabaseManager().get_session()
     if not user:
-        # try to authenticate with username/password
         user = session.query(User).filter(User.username == username_or_token).first()
         if not user or not user.verify_password(password):
             session.close()
@@ -66,13 +63,13 @@ class RegisterUser(Resource):
         query = session.query(User).filter(User.username == username).first()
         session.close()
         if query is not None:
-            return 'User already registered', 400
+            return 'User already registered', codes.BAD_REQUEST
         user = User(username=username)
         user.hash_password(password)
         session = db.get_session()
         session.add(user)
         db.safe_commit(session)
-        return {'username': username}, 201
+        return {'username': username}, codes.CREATED
 
 class ProcessImg(Resource):
     method_decorators = [auth.login_required]
@@ -84,11 +81,13 @@ class ProcessImg(Resource):
                             help="img_id missing in the post body")
         args = parser.parse_args()
         img_id = args['img_id']
-        lol = queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
-                                  img_id)
-        logger.debug(lol)
+        try:
+            queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
+                                      img_id)
+        except:
+            return 'Server error', codes.INTERNAL_SERVER_ERROR
         logger.info('img successfully uploaded and id put on queue')
-        return '', 200
+        return 'OK', codes.OK
 
     def get(self, img_id):
         logger.debug('checking if img has been processed')
@@ -102,27 +101,35 @@ class ProcessImg(Resource):
 
 class ImgUpload(Resource):
     method_decorators = [auth.login_required]
+    allowed_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS'].lower().split('_')
 
     def post(self):
         logger.debug('uploading img')
         parser = reqparse.RequestParser()
-        parser.add_argument('file',
+        parser.add_argument('image',
                             type=werkzeug.datastructures.FileStorage,
+                            required=True,
+                            help="image missing in post body",
                             location='files')
         args = parser.parse_args()
-        file = args['file']
+        img = args['image']
         logger.debug("FILE RECEIVED")
-        logger.debug(file.filename)
-        if file and self._allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            saved = file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        logger.debug(img.filename)
+        if self._allowed_file(img.filename):
+            filename = secure_filename(img.filename)
+            try:
+                img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            except:
+                return 'Server error', codes.INTERNAL_SERVER_ERROR
             logger.info('img successfully uploaded and id put on queue')
-            logger.debug(saved)
-            return '', 200
+            return 'OK', codes.OK
+        else:
+            error_msg = '''Image upload failed: please use one of the following 
+extensions --> {}'''.format(self.allowed_extensions)
+            return error_msg, codes.BAD_REQUEST
 
     def _allowed_file(self, filename):
-        allowed_extensions = ['jpg']
-        return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in self.allowed_extensions
 
 class OriginalImgMatchList(Resource):
     method_decorators = [auth.login_required]
@@ -147,7 +154,7 @@ class OriginalImgList(Resource):
         logger.debug('getting original img list')
         session = DatabaseManager().get_session()
         query = session.query(OriginalImage).all()
-        imgs = list(set(f.img_id for f in query))
+        imgs = [f.img_id for f in query]
         session.close()
         return {'imgs': imgs}
 

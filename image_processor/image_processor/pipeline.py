@@ -16,6 +16,10 @@ class Pipeline:
         self.logger = get_logger(__name__,
                                  'image_processor.log',
                                  os.environ['LOGGING_LEVEL'])
+        dirname = os.path.dirname(os.path.abspath(__file__))
+        self.img_dir = os.path.join(dirname, 'images')
+        file_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS'].lower()
+        self.allowed_file_extensions = file_extensions.split('_')
         self.logger.debug('pipeline initialized')
 
     def _add_entry_to_session(self, cls, session, **kwargs):
@@ -29,12 +33,25 @@ class Pipeline:
         self._add_entry_to_session(OriginalImage,
                                    session,
                                    img_id=original_img_id)
-        dirname = os.path.dirname(os.path.abspath(__file__))
-        img_dir = os.path.join(dirname, 'images')
-        input_img_base_path = os.path.join(img_dir, 'input')
-        fpath = "{}/{}.jpg".format(input_img_base_path, original_img_id)
-        original_img = face_recognition.load_image_file(fpath)
-        return original_img
+        for extension in self.allowed_file_extensions:
+            img_name = "{}.{}".format(original_img_id, extension)
+            fpath = os.path.join(self.img_dir, img_name)
+            try:
+                original_img = face_recognition.load_image_file(fpath)
+                return original_img
+            except FileNotFoundError:
+                continue
+
+    def _delete_original_img(self, original_img_id):
+        self.logger.debug('deleting original img')
+        for extension in self.allowed_file_extensions:
+            img_name = "{}.{}".format(original_img_id, extension)
+            fpath = os.path.join(self.img_dir, img_name)
+            try:
+                os.remove(fpath)
+                self.logger.debug("removed {}".format(original_img_id))
+            except FileNotFoundError:
+                continue
 
     def _process_feature_mapping(self, features, original_img_id, session):
         self.logger.debug('processing feature mapping')
@@ -101,6 +118,7 @@ class Pipeline:
                                           float(face_distance),
                                           session)
         self.db.safe_commit(session)
+        self._delete_original_img(original_img_id)
 
     def begin_pipeline(self):
         self.logger.debug('pipeline began')

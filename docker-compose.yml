@@ -14,7 +14,7 @@ services:
       - "./persisted_data/images:/images"
       - "./frontend/build:/frontend/build"
   image_processor:
-    #restart: always
+    restart: always
     build: ./image_processor
     logging:
       driver: "json-file"

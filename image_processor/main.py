@@ -8,9 +8,6 @@ if __name__ == "__main__":
     db.create_all_tables()
 
     qp = QueuePoll(os.environ['IMAGE_PROCESSOR_QUEUE'])
-    NUM_INPUT_PICS = 10
-    for i in range(1, NUM_INPUT_PICS+1):
-        qp.queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'], str(i))
 
     pipeline = Pipeline()
     pipeline.begin_pipeline()
