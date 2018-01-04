@@ -38,7 +38,7 @@ class Pipeline:
             cropped_img_ids.append(row.cropped_img_id)
             current_features = np.loads(base64.b64decode(row.features))
             known_features.append(current_features)
-        return cropped_img_ids, known_features
+        return cropped_img_ids, np.array(known_features)
     
     def _add_entry_to_session(self, cls, session, **kwargs):
         self.logger.debug('adding entry to session')

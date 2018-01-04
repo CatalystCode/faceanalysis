@@ -1,4 +1,5 @@
 import os
+from requests import codes
 from flask import Flask, Request
 from werkzeug.utils import secure_filename
 from flask_restful import Resource, Api, reqparse
@@ -15,6 +16,7 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.path.join(
                                            os.path.abspath(__file__)),
                                            'images'),
                                            'input')
+app.url_map.strict_slashes = False
 api = Api(app)
 queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
                              account_key=os.environ['STORAGE_ACCOUNT_KEY'])
@@ -27,26 +29,35 @@ class ImgUpload(Resource):
     def post(self):
         logger.debug('uploading img')
         parser = reqparse.RequestParser()
-        parser.add_argument('file',
+        parser.add_argument('image',
                             type=werkzeug.datastructures.FileStorage,
+                            help="image missing in post body",
                             location='files')
         args = parser.parse_args()
-        file = args['file']
-        if file and self._allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            img_id = file.filename[:-4]
-            queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
-                                      img_id)
-            logger.info('img successfully uploaded and id put on queue')
-            return {'success': True}
+        img = args['image']
+        if self._allowed_file(img.filename):
+            filename = secure_filename(img.filename)
+            try:
+                img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                img_id = img.filename[:-4]
+                queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
+                                          img_id)
+                logger.info('img successfully uploaded and id put on queue')
+                return 'OK', codes.OK
+            except:
+                logger.warn('img upload failed')
+                return 'Server Error', codes.INTERNAL_SERVER_ERROR
+        else:
+            error_msg = '''Image upload failed: please use one of the following 
+extensions --> {}'''.format(self.allowed_extensions)
+            return error_msg, codes.BAD_REQUEST
 
     def get(self, img_id):
         logger.debug('checking if uploaded img has been processed')
         session = DatabaseManager().get_session()
-        query = session.query(OriginalImage).filter(OriginalImage.img_id == img_id).all()
+        query = session.query(OriginalImage).filter(OriginalImage.img_id == img_id).first()
         session.close()
-        if len(query):
+        if query is not None:
             return {'finished_processing': True}
         else:
             return {'finished_processing': False}
@@ -74,7 +85,7 @@ class CroppedImgListFromOriginalImgId(Resource):
         logger.debug('getting cropped img list given original img id')
         session = DatabaseManager().get_session()
         query = session.query(CroppedImage).filter(CroppedImage.original_img_id == img_id)
-        imgs = list(set(cropped_img.img_id for cropped_img in query))
+        imgs = [cropped_img.img_id for cropped_img in query]
         session.close()
         return {'imgs': imgs}
 
@@ -83,7 +94,7 @@ class OriginalImgList(Resource):
         logger.debug('getting original img list')
         session = DatabaseManager().get_session()
         query = session.query(OriginalImage).all()
-        imgs = list(set(f.img_id for f in query))
+        imgs = [f.img_id for f in query]
         session.close()
         return {'imgs': imgs}
 
@@ -96,11 +107,11 @@ class OriginalImgListFromCroppedImgId(Resource):
         session.close()
         return {'imgs': imgs}
 
-api.add_resource(ImgUpload, '/api/upload_image/', '/api/upload_image/<string:img_id>/')
-api.add_resource(CroppedImgMatchList, '/api/cropped_image_matches/<string:img_id>/')
+api.add_resource(ImgUpload, '/api/upload_image/', '/api/upload_image/<string:img_id>')
+api.add_resource(CroppedImgMatchList, '/api/cropped_image_matches/<string:img_id>')
 api.add_resource(OriginalImgList, '/api/original_images/')
-api.add_resource(OriginalImgListFromCroppedImgId, '/api/original_images/<string:img_id>/')
-api.add_resource(CroppedImgListFromOriginalImgId, '/api/cropped_images/<string:img_id>/')
+api.add_resource(OriginalImgListFromCroppedImgId, '/api/original_images/<string:img_id>')
+api.add_resource(CroppedImgListFromOriginalImgId, '/api/cropped_images/<string:img_id>')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)

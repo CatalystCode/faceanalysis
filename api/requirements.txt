@@ -28,10 +28,10 @@ SQLAlchemy==1.1.15
 urllib3==1.22
 Werkzeug==0.13
 
-
 # pip install mysql-connector-python
 # pip install flask
 # pip install sqlalchemy
 # pip install gunicorn
 # pip install flask-restful
 # pip install azure-storage-queue
+# pip install requests

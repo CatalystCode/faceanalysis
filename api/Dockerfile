@@ -13,6 +13,7 @@ RUN apt-get -y update \
 #    sqlalchemy \
 #    flask-restful \
 #    gunicorn \
-#    azure-storage-queue
+#    azure-storage-queue \
+#    requests
 EXPOSE 5000
 ENTRYPOINT ["/bin/bash", "/app/run.sh"]

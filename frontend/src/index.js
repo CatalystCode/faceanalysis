@@ -225,7 +225,7 @@ class UploadImageDisplay extends React.Component {
 		
 		if (this.state.file != null) {
 			var formData = new FormData();
-			formData.append("file", this.state.file);
+			formData.append("image", this.state.file);
             var that = this;
 			axios.post(this.props.baseUrl + '/api/upload_image/', formData, {
     			headers: {
