@@ -3,7 +3,7 @@ from requests import codes
 from flask import Flask, Request, abort, g
 from werkzeug.utils import secure_filename
 from flask_restful import Resource, Api, reqparse
-from .models.models import Match, OriginalImage, User
+from .models.models import Match, Image, User
 from .models.database_manager import DatabaseManager
 import werkzeug
 from azure.storage.queue import QueueService
@@ -84,15 +84,15 @@ class ProcessImg(Resource):
         try:
             queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
                                       img_id)
+            logger.info('img successfully put on queue')
         except:
             return 'Server error', codes.INTERNAL_SERVER_ERROR
-        logger.info('img successfully uploaded and id put on queue')
         return 'OK', codes.OK
 
     def get(self, img_id):
         logger.debug('checking if img has been processed')
         session = DatabaseManager().get_session()
-        query = session.query(OriginalImage).filter(OriginalImage.img_id == img_id).first()
+        query = session.query(Image).filter(Image.img_id == img_id).first()
         session.close()
         if query is not None:
             return {'finished_processing': True}
@@ -113,15 +113,13 @@ class ImgUpload(Resource):
                             location='files')
         args = parser.parse_args()
         img = args['image']
-        logger.debug("FILE RECEIVED")
-        logger.debug(img.filename)
         if self._allowed_file(img.filename):
             filename = secure_filename(img.filename)
             try:
                 img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             except:
                 return 'Server error', codes.INTERNAL_SERVER_ERROR
-            logger.info('img successfully uploaded and id put on queue')
+            logger.info('img successfully uploaded')
             return 'OK', codes.OK
         else:
             error_msg = '''Image upload failed: please use one of the following 
@@ -131,37 +129,37 @@ extensions --> {}'''.format(self.allowed_extensions)
     def _allowed_file(self, filename):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() in self.allowed_extensions
 
-class OriginalImgMatchList(Resource):
+class ImgMatchList(Resource):
     method_decorators = [auth.login_required]
 
     def get(self, img_id):
-        logger.debug('getting original img match list')
+        logger.debug('getting img match list')
         session = DatabaseManager().get_session()
-        query = session.query(Match).filter(Match.this_original_img_id == img_id)
+        query = session.query(Match).filter(Match.this_img_id == img_id)
         imgs = []
         distances = []
         for match in query:
-            imgs.append(match.that_original_img_id)
+            imgs.append(match.that_img_id)
             distances.append(match.distance_score)
         session.close()
         return {'imgs': imgs,
                 'distances': distances}
 
-class OriginalImgList(Resource):
+class ImgList(Resource):
     method_decorators = [auth.login_required]
 
     def get(self):
-        logger.debug('getting original img list')
+        logger.debug('getting img list')
         session = DatabaseManager().get_session()
-        query = session.query(OriginalImage).all()
+        query = session.query(Image).all()
         imgs = [f.img_id for f in query]
         session.close()
         return {'imgs': imgs}
 
 api.add_resource(ImgUpload, '/api/upload_image')
 api.add_resource(ProcessImg, '/api/process_image/', '/api/process_image/<string:img_id>')
-api.add_resource(OriginalImgMatchList, '/api/original_image_matches/<string:img_id>')
-api.add_resource(OriginalImgList, '/api/original_images')
+api.add_resource(ImgMatchList, '/api/image_matches/<string:img_id>')
+api.add_resource(ImgList, '/api/images')
 api.add_resource(RegisterUser, '/api/register_user')
 api.add_resource(AuthenticationToken, '/api/token')
 
