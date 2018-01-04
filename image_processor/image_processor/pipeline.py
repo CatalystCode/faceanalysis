@@ -8,7 +8,7 @@ from .models.database_manager import DatabaseManager
 from .models.models import Image, FeatureMapping, Match
 import base64
 from .log import get_logger
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 
 class Pipeline:
     def __init__(self):
@@ -65,7 +65,14 @@ class Pipeline:
         self.logger.debug('processing matches')
         if distance_score < 0.6 and this_img_id != that_img_id:
             query_session = self.db.get_session()
-            query = session.query(Match).filter(or_(Match.this_img_id == this_img_id, Match.that_img_id == Match.this_img_id)).first()
+            query = session.query(Match).filter(
+                    or_(
+                        and_(Match.this_img_id == this_img_id,
+                             Match.that_img_id == that_img_id),
+                        and_(Match.this_img_id == that_img_id,
+                             Match.that_img_id == this_img_id)
+                    )
+            ).first()
             query_session.close()
             if not query:
                 self._add_entry_to_session(Match,
