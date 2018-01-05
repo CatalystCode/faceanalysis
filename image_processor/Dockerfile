@@ -44,7 +44,9 @@ RUN pip install -r requirements.txt
 #    azure-storage-queue \
 #    numpy \
 #    scipy \
-#    face_recognition
-RUN pip install passlib Flask-HTTPAuth flask-sqlalchemy requests
+#    face_recognition \
+#    passlib \
+#    Flask-HTTPAuth \
+#    requests
 EXPOSE 5000
 ENTRYPOINT ["/bin/bash", "/app/run.sh"]

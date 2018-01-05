@@ -14,6 +14,7 @@ RUN apt-get -y update \
 #    flask-restful \
 #    gunicorn \
 #    azure-storage-queue
-RUN pip install passlib Flask-HTTPAuth flask-sqlalchemy
+#    passlib \
+#    Flask-HTTPAuth
 EXPOSE 5000
 ENTRYPOINT ["/bin/bash", "/app/run.sh"]
