@@ -13,9 +13,7 @@ from sqlalchemy import or_, and_
 class Pipeline:
     def __init__(self):
         self.db = DatabaseManager()
-        self.logger = get_logger(__name__,
-                                 'image_processor.log',
-                                 os.environ['LOGGING_LEVEL'])
+        self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
         dirname = os.path.dirname(os.path.abspath(__file__))
         self.img_dir = os.path.join(dirname, 'images')
         file_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS'].lower()

@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 
-def get_logger(module_name, log_file_name, logging_level):
+def get_logger(module_name, logging_level):
     logging_levels = {
             'DEBUG': logging.DEBUG,
             'INFO': logging.INFO,

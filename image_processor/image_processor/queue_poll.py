@@ -9,9 +9,7 @@ class QueuePoll:
                                           account_key=os.environ['STORAGE_ACCOUNT_KEY'])
         self.queue_name = queue_name
         self.queue_service.create_queue(self.queue_name)
-        self.logger = get_logger(__name__,
-                                 'image_processor.log',
-                                 os.environ['LOGGING_LEVEL'])
+        self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
     def _get_messages_from_queue(self):
         messages = []
         try:

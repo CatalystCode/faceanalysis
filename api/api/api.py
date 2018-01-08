@@ -20,9 +20,7 @@ api = Api(app)
 queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
                              account_key=os.environ['STORAGE_ACCOUNT_KEY'])
 queue_service.create_queue(os.environ['IMAGE_PROCESSOR_QUEUE'])
-logger = get_logger(__name__,
-                    'api.log',
-                    os.environ['LOGGING_LEVEL'])
+logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
 
 auth = HTTPBasicAuth()
 

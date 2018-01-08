@@ -33,9 +33,7 @@ class DatabaseManager:
                                     pool_recycle=3600,
                                     echo=True)
         self.Session = sessionmaker(bind=self.engine)
-        self.logger = get_logger(__name__,
-                                 'image_processor.log',
-                                 os.environ['LOGGING_LEVEL'])
+        self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
 
     def create_all_tables(self):
         self.base.metadata.create_all(self.engine)
