@@ -61,40 +61,16 @@ class Pipeline:
 
     def _process_matches(self, this_img_id, that_img_id, distance_score, session):
         self.logger.debug('processing matches')
-        if distance_score < 0.6 and this_img_id != that_img_id:
-            update_session = self.db.get_session()
-            query = update_session.query(Match).filter(
-                    or_(
-                        and_(Match.this_img_id == this_img_id,
-                             Match.that_img_id == that_img_id),
-                        and_(Match.this_img_id == that_img_id,
-                             Match.that_img_id == this_img_id)
-                    )
-            )
-            prev_match = query.order_by(Match.distance_score).first()
-            if prev_match:
-                self.logger.debug("PREV MATCH EXISTS")
-                self.logger.debug(prev_match)
-                self.logger.debug(prev_match.distance_score)
-                self.logger.debug(type(prev_match.distance_score))
-                self.logger.debug(distance_score)
-                min_distance = min(distance_score, prev_match.distance_score)
-                query.update({'distance_score': min_distance})
-                self.db.safe_commit(update_session)
-            else:
-                #TODO: With multiple matches between 2 photos this is called too many times and added too many times so rolls back
-                self.logger.debug("NO PREV MATCH")
-                update_session.close()
-                self._add_entry_to_session(Match,
-                                           session,
-                                           this_img_id=this_img_id,
-                                           that_img_id=that_img_id,
-                                           distance_score=distance_score)
-                self._add_entry_to_session(Match,
-                                           session,
-                                           this_img_id=that_img_id,
-                                           that_img_id=this_img_id,
-                                           distance_score=distance_score)
+        self._add_entry_to_session(Match,
+                                   session,
+                                   this_img_id=this_img_id,
+                                   that_img_id=that_img_id,
+                                   distance_score=distance_score)
+        self._add_entry_to_session(Match,
+                                   session,
+                                   this_img_id=that_img_id,
+                                   that_img_id=this_img_id,
+                                   distance_score=distance_score)
 
     def _get_img_ids_and_features(self):
         self.logger.debug('getting all img ids and respective features')
@@ -124,12 +100,11 @@ class Pipeline:
                 self._process_feature_mapping(features[0],
                                               img_id,
                                               session)
-
                 img_ids, known_features = self._get_img_ids_and_features()
                 face_distances = face_recognition.face_distance(known_features,
                                                                 features)
                 for count, face_distance in enumerate(face_distances):
-                    if float(face_distance) < 0.6:
+                    if float(face_distance) < 0.6 and img_id != img_ids[count]:
                         match_exists = False
                         for match in matches:
                             if match["that_img_id"] == img_ids[count]:
