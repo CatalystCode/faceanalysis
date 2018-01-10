@@ -88,6 +88,7 @@ class Pipeline:
     def _handle_message_from_queue(self, message):
         self.logger.debug("handling message from queue")
         matches = []
+        img_ids, known_features = self._get_img_ids_and_features()
         session = self.db.get_session()
         img_id = message.content
         img = self._process_img(img_id, session)
@@ -100,7 +101,6 @@ class Pipeline:
                 self._process_feature_mapping(features[0],
                                               img_id,
                                               session)
-                img_ids, known_features = self._get_img_ids_and_features()
                 face_distances = face_recognition.face_distance(known_features,
                                                                 features)
                 for count, face_distance in enumerate(face_distances):
