@@ -62,17 +62,29 @@ class Pipeline:
     def _process_matches(self, this_img_id, that_img_id, distance_score, session):
         self.logger.debug('processing matches')
         if distance_score < 0.6 and this_img_id != that_img_id:
-            query_session = self.db.get_session()
-            query = session.query(Match).filter(
+            update_session = self.db.get_session()
+            query = update_session.query(Match).filter(
                     or_(
                         and_(Match.this_img_id == this_img_id,
                              Match.that_img_id == that_img_id),
                         and_(Match.this_img_id == that_img_id,
                              Match.that_img_id == this_img_id)
                     )
-            ).first()
-            query_session.close()
-            if not query:
+            )
+            prev_match = query.order_by(Match.distance_score).first()
+            if prev_match:
+                self.logger.debug("PREV MATCH EXISTS")
+                self.logger.debug(prev_match)
+                self.logger.debug(prev_match.distance_score)
+                self.logger.debug(type(prev_match.distance_score))
+                self.logger.debug(distance_score)
+                min_distance = min(distance_score, prev_match.distance_score)
+                query.update({'distance_score': min_distance})
+                self.db.safe_commit(update_session)
+            else:
+                #TODO: With multiple matches between 2 photos this is called too many times and added too many times so rolls back
+                self.logger.debug("NO PREV MATCH")
+                update_session.close()
                 self._add_entry_to_session(Match,
                                            session,
                                            this_img_id=this_img_id,
@@ -99,6 +111,7 @@ class Pipeline:
 
     def _handle_message_from_queue(self, message):
         self.logger.debug("handling message from queue")
+        matches = []
         session = self.db.get_session()
         img_id = message.content
         img = self._process_img(img_id, session)
@@ -116,10 +129,23 @@ class Pipeline:
                 face_distances = face_recognition.face_distance(known_features,
                                                                 features)
                 for count, face_distance in enumerate(face_distances):
-                    self._process_matches(img_id,
-                                          img_ids[count],
-                                          float(face_distance),
-                                          session)
+                    if float(face_distance) < 0.6:
+                        match_exists = False
+                        for match in matches:
+                            if match["that_img_id"] == img_ids[count]:
+                                match_exists = True
+                                min_dist = min(match["distance_score"], float(face_distance))
+                                match["distance_score"] = min_dist
+                        if not match_exists:
+                            matches.append({
+                                "that_img_id": img_ids[count],
+                                "distance_score": float(face_distance)
+                            })
+        for match in matches:
+            self._process_matches(img_id,
+                                  match["that_img_id"],
+                                  match["distance_score"],
+                                  session)
         self.db.safe_commit(session)
         self._delete_img(img_id)
 
