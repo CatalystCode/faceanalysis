@@ -85,44 +85,51 @@ class Pipeline:
             known_features.append(current_features)
         return img_ids, np.array(known_features)
 
+    def _prepare_matches(self, matches, that_img_id, distance_score):
+        match_exists = False
+        for match in matches:
+            if match["that_img_id"] == that_img_id:
+                match_exists = True
+                match["distance_score"] = min(match["distance_score"],
+                                              distance_score)
+        if not match_exists:
+            matches.append({
+                "that_img_id": that_img_id,
+                "distance_score": distance_score 
+            })
+
     def _handle_message_from_queue(self, message):
         self.logger.debug("handling message from queue")
-        matches = []
-        img_ids, known_features = self._get_img_ids_and_features()
         session = self.db.get_session()
-        img_id = message.content
-        img = self._process_img(img_id, session)
-        face_locations = face_recognition.face_locations(img)
-        for count, face_location in enumerate(face_locations):
+        curr_img_id = message.content
+        curr_img = self._process_img(curr_img_id, session)
+        prev_img_ids, prev_features = self._get_img_ids_and_features()
+        curr_matches = []
+        face_locations = face_recognition.face_locations(curr_img)
+        for face_location in face_locations:
             top, right, bottom, left = face_location
-            cropped_img = img[top:bottom, left:right]
-            features = face_recognition.face_encodings(cropped_img)
-            if len(features):
-                self._process_feature_mapping(features[0],
-                                              img_id,
+            curr_cropped_img = curr_img[top:bottom, left:right]
+            curr_cropped_features = face_recognition.face_encodings(curr_cropped_img)
+            if len(curr_cropped_features):
+                self._process_feature_mapping(curr_cropped_features[0],
+                                              curr_img_id,
                                               session)
-                face_distances = face_recognition.face_distance(known_features,
-                                                                features)
-                for count, face_distance in enumerate(face_distances):
-                    if float(face_distance) < 0.6 and img_id != img_ids[count]:
-                        match_exists = False
-                        for match in matches:
-                            if match["that_img_id"] == img_ids[count]:
-                                match_exists = True
-                                min_dist = min(match["distance_score"], float(face_distance))
-                                match["distance_score"] = min_dist
-                        if not match_exists:
-                            matches.append({
-                                "that_img_id": img_ids[count],
-                                "distance_score": float(face_distance)
-                            })
-        for match in matches:
-            self._process_matches(img_id,
-                                  match["that_img_id"],
-                                  match["distance_score"],
+                face_distances = face_recognition.face_distance(prev_features,
+                                                                curr_cropped_features)
+                for count, distance_score in enumerate(face_distances):
+                    distance_score = float(distance_score)
+                    that_img_id = prev_img_ids[count]
+                    if distance_score < 0.6 and curr_img_id != that_img_id:
+                        self._prepare_matches(curr_matches,
+                                              that_img_id,
+                                              distance_score)
+        for curr_match in curr_matches:
+            self._process_matches(curr_img_id,
+                                  curr_match["that_img_id"],
+                                  curr_match["distance_score"],
                                   session)
         self.db.safe_commit(session)
-        self._delete_img(img_id)
+        self._delete_img(curr_img_id)
 
     def begin_pipeline(self):
         self.logger.debug('pipeline began')
