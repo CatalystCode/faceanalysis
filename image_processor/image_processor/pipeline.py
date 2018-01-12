@@ -28,16 +28,22 @@ class Pipeline:
 
     def _process_img(self, img_id, session):
         self.logger.debug('processing img')
-        self._add_entry_to_session(Image,
-                                   session,
-                                   img_id=img_id)
+        img_has_been_uploaded = False
+        img = None
         for extension in self.allowed_file_extensions:
             img_name = "{}.{}".format(img_id, extension)
             fpath = os.path.join(self.img_dir, img_name)
             try:
-                return face_recognition.load_image_file(fpath)
-            except FileNotFoundError:
+                img = face_recognition.load_image_file(fpath)
+                img_has_been_uploaded = True
+                break
+            except:
                 continue
+        if img_has_been_uploaded:
+            self._add_entry_to_session(Image,
+                                       session,
+                                       img_id=img_id)
+        return img
 
     def _delete_img(self, img_id):
         self.logger.debug('deleting img')
@@ -47,7 +53,7 @@ class Pipeline:
             try:
                 os.remove(fpath)
                 self.logger.debug("removed {}".format(img_id))
-            except FileNotFoundError:
+            except:
                 continue
 
     def _process_feature_mapping(self, features, img_id, session):
@@ -103,31 +109,32 @@ class Pipeline:
         session = self.db.get_session()
         curr_img_id = message.content
         curr_img = self._process_img(curr_img_id, session)
-        prev_img_ids, prev_features = self._get_img_ids_and_features()
-        curr_matches = []
-        face_locations = face_recognition.face_locations(curr_img)
-        for face_location in face_locations:
-            top, right, bottom, left = face_location
-            curr_cropped_img = curr_img[top:bottom, left:right]
-            curr_cropped_features = face_recognition.face_encodings(curr_cropped_img)
-            if len(curr_cropped_features):
-                self._process_feature_mapping(curr_cropped_features[0],
-                                              curr_img_id,
-                                              session)
-                face_distances = face_recognition.face_distance(prev_features,
-                                                                curr_cropped_features)
-                for count, distance_score in enumerate(face_distances):
-                    distance_score = float(distance_score)
-                    that_img_id = prev_img_ids[count]
-                    if distance_score < 0.6 and curr_img_id != that_img_id:
-                        self._prepare_matches(curr_matches,
-                                              that_img_id,
-                                              distance_score)
-        for curr_match in curr_matches:
-            self._process_matches(curr_img_id,
-                                  curr_match["that_img_id"],
-                                  curr_match["distance_score"],
-                                  session)
+        if curr_img is not None:
+            prev_img_ids, prev_features = self._get_img_ids_and_features()
+            curr_matches = []
+            face_locations = face_recognition.face_locations(curr_img)
+            for face_location in face_locations:
+                top, right, bottom, left = face_location
+                curr_cropped_img = curr_img[top:bottom, left:right]
+                curr_cropped_features = face_recognition.face_encodings(curr_cropped_img)
+                if len(curr_cropped_features):
+                    self._process_feature_mapping(curr_cropped_features[0],
+                                                  curr_img_id,
+                                                  session)
+                    face_distances = face_recognition.face_distance(prev_features,
+                                                                    curr_cropped_features)
+                    for count, distance_score in enumerate(face_distances):
+                        distance_score = float(distance_score)
+                        that_img_id = prev_img_ids[count]
+                        if distance_score < 0.6 and curr_img_id != that_img_id:
+                            self._prepare_matches(curr_matches,
+                                                  that_img_id,
+                                                  distance_score)
+            for curr_match in curr_matches:
+                self._process_matches(curr_img_id,
+                                      curr_match["that_img_id"],
+                                      curr_match["distance_score"],
+                                      session)
         self.db.safe_commit(session)
         self._delete_img(curr_img_id)
 
