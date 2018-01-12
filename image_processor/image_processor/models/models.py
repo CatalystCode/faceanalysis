@@ -8,8 +8,9 @@ from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
 import os
 import datetime
+from sqlalchemy.ext.declarative import declarative_base
 
-Base = DatabaseManager().get_base()
+Base = declarative_base()
 
 class User(Base):
     __tablename__ = 'users'
@@ -71,3 +72,5 @@ class Match(Base):
     that_img = relationship('Image', foreign_keys=[that_img_id])
     __table_args__ = (UniqueConstraint('this_img_id', 'that_img_id', name='_this_that_uc'),)
 
+def init_models(database_engine):
+    Base.metadata.create_all(database_engine)

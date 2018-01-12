@@ -15,8 +15,6 @@ def singleton(class_):
 @singleton
 class DatabaseManager:
     def __init__(self):
-        #self.engine = create_engine("sqlite:///test.db", echo=True)
-        self.base = declarative_base()
         mysql_user = os.environ['MYSQL_USER']
         mysql_password = os.environ['MYSQL_PASSWORD']
         mysql_container_name = os.environ['MYSQL_CONTAINER_NAME']
@@ -32,14 +30,9 @@ class DatabaseManager:
         self.engine = create_engine(engine_credential_str,
                                     pool_recycle=3600,
                                     echo=True)
+
         self.Session = sessionmaker(bind=self.engine)
         self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
-
-    def create_all_tables(self):
-        self.base.metadata.create_all(self.engine)
-
-    def get_base(self):
-        return self.base
 
     def get_session(self):
         return self.Session()

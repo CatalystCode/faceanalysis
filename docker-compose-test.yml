@@ -23,7 +23,6 @@ services:
     env_file:
       - ./environment_variables.env
   api:
-    restart: always
     build: ./api
     logging:
       driver: "json-file"
@@ -45,6 +44,6 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
-      - "./persisted_data/prod_database:/var/lib/mysql"
+      - "./persisted_data/test_database:/var/lib/mysql"
     env_file:
       - ./environment_variables.env
