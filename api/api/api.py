@@ -3,12 +3,12 @@ import werkzeug
 from werkzeug.utils import secure_filename
 from requests import codes
 from azure.storage.queue import QueueService
-from flask_httpauth import HTTPBasicAuth
 from flask_restful import Resource, Api, reqparse
 from flask import Flask, g
 from .models.models import Match, Image, User
 from .models.database_manager import DatabaseManager
 from .log import get_logger
+from .auth import auth
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(
@@ -21,22 +21,6 @@ queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
                              account_key=os.environ['STORAGE_ACCOUNT_KEY'])
 queue_service.create_queue(os.environ['IMAGE_PROCESSOR_QUEUE'])
 logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
-auth = HTTPBasicAuth()
-
-
-@auth.verify_password
-def verify_password(username_or_token, password):
-    user = User.verify_auth_token(username_or_token)
-    session = DatabaseManager().get_session()
-    if not user:
-        user = session.query(User).filter(
-            User.username == username_or_token).first()
-        if not user or not user.verify_password(password):
-            session.close()
-            return False
-    g.user = user
-    session.close()
-    return True
 
 
 class AuthenticationToken(Resource):
