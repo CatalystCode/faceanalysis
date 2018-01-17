@@ -1,13 +1,14 @@
-from .. import api
-import unittest
 import os
-from base64 import b64encode
-from ..models.database_manager import DatabaseManager
-from ..models.models import init_models, User, Image, FeatureMapping, Match, Base
 import json
+import unittest
+from base64 import b64encode
 from io import BytesIO
 from time import sleep
 from requests import codes
+from .. import api
+from ..models.database_manager import DatabaseManager
+from ..models.models import init_models
+
 
 class ApiTestCase(unittest.TestCase):
     has_registered_user = False
@@ -68,16 +69,18 @@ class ApiTestCase(unittest.TestCase):
 
     def _get_matches(self, img_id, expected_status_code=codes.OK):
         headers = self._get_basic_auth_headers()
-        response = self.app.get('/api/image_matches/'+img_id,
+        response = self.app.get('/api/image_matches/' + img_id,
                                 headers=headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
-    def _wait_for_img_to_finish_processing(self, img_id, expected_status_code=codes.OK):
+    def _wait_for_img_to_finish_processing(self,
+                                           img_id,
+                                           expected_status_code=codes.OK):
         headers = self._get_basic_auth_headers()
         while True:
-            response = self.app.get('/api/process_image/'+img_id,
-                                     headers=headers)
+            response = self.app.get('/api/process_image/' + img_id,
+                                    headers=headers)
             self.assertEqual(response.status_code, expected_status_code)
             data = json.loads(response.get_data(as_text=True))
             if data['finished_processing']:
@@ -85,8 +88,7 @@ class ApiTestCase(unittest.TestCase):
             sleep(3)
 
     def _test_end_to_end_with_matching_imgs(self, fnames):
-        headers = self._get_basic_auth_headers()
-        img_ids = set() 
+        img_ids = set()
         for fname in fnames:
             index_of_period = fname.find('.')
             img_id = fname[:index_of_period]
@@ -103,9 +105,10 @@ class ApiTestCase(unittest.TestCase):
             matches_response = self._get_matches(img_id)
             matches_data = json.loads(matches_response.get_data(as_text=True))
             should_be_matches = img_ids - set([img_id])
-            self.assertTrue(should_be_matches.issubset(set(matches_data['imgs'])))
+            self.assertTrue(should_be_matches.issubset(
+                set(matches_data['imgs'])))
             self.assertNotIn(img_id, matches_data['imgs'])
-                
+
     def test_end_to_end_with_one_face_per_img_that_match(self):
         fnames = {'1.jpg', '2.jpg'}
         self._test_end_to_end_with_matching_imgs(fnames)
@@ -115,12 +118,11 @@ class ApiTestCase(unittest.TestCase):
         self._test_end_to_end_with_matching_imgs(fnames)
 
     def test_end_to_end_with_one_to_multiple_faces_per_img_that_match(self):
-        fnames = {'3.jpg', '6.jpg'} #CANNOT REUSE PHOTOS
-        #self._test_end_to_end_with_matching_imgs(fnames)
+        fnames = {'3.jpg', '6.jpg'}  # CANNOT REUSE PHOTOS
+        # self._test_end_to_end_with_matching_imgs(fnames)
         pass
 
     def test_upload_and_process_img_without_face(self):
-        headers = self._get_basic_auth_headers()
         fname = '9.jpg'
         img_id = fname[0]
         self._upload_img(fname)
@@ -136,15 +138,13 @@ class ApiTestCase(unittest.TestCase):
         pass
 
     def test_upload_twice(self):
-        headers = self._get_basic_auth_headers()
         fname = '4.jpg'
         self._upload_img(fname)
 
     def test_upload_and_process_twice(self):
-        headers = self._get_basic_auth_headers()
         fname = '5.jpg'
         img_id = fname[0]
-        
+
         self._upload_img(fname)
         for fname in [fname, fname]:
             self._process_img(img_id)
@@ -170,10 +170,7 @@ class ApiTestCase(unittest.TestCase):
         pass
 
     def test_upload_file_not_allowed(self):
-        headers = self._get_basic_auth_headers()
         fname = '0.txt'
-        img_id = fname[0]
-        
         self._upload_img(fname, codes.BAD_REQUEST)
 
     def test_upload_arbitrarily_large_file(self):
@@ -181,7 +178,7 @@ class ApiTestCase(unittest.TestCase):
 
     # hlper utility methods
     def _get_basic_auth_headers(self):
-        #auth_encoding = b64encode(b"%s:%s" % (self.username.encode(),
+        # auth_encoding = b64encode(b"%s:%s" % (self.username.encode(),
         #                                      self.password.encode()))
         auth_encoding = b64encode(b'username:password').decode('ascii')
         headers = {'Authorization': 'Basic ' + auth_encoding}
