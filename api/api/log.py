@@ -1,18 +1,18 @@
-import os
 import sys
 import logging
 
-def get_logger(module_name, log_file_name, logging_level):
+
+def get_logger(module_name, logging_level):
     logging_levels = {
-            'DEBUG': logging.DEBUG,
-            'INFO': logging.INFO,
-            'WARNING': logging.WARNING,
-            'ERROR': logging.ERROR,
-            'CRITICAL': logging.CRITICAL
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR,
+        'CRITICAL': logging.CRITICAL
     }
     logger = logging.getLogger(module_name)
     logger.setLevel(logging_levels[logging_level])
-    
+
     stream_handler = logging.StreamHandler(sys.stdout)
     stream_handler.setLevel(logging_levels[logging_level])
 

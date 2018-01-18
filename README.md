@@ -5,21 +5,14 @@
 4. Replace default environment variables in environment_variables.yml
 5. From the directory containing docker-compose.yml run the command 'docker-compose build'
 6. Run the command 'docker-compose up'
-7. Once output stops printing, navigate to http://YOUR_VM_IP_ADDRESS
-8. Click on one of the original images to see cropped images
-9. Click on one of the cropped images to see all the matches
-10. Click on one of the matches to see the original image it came from
-11. When finished, press ctrl-d to stop the docker containers and optionally execute the script cleanup.sh to properly remove persisted data
 
-# Gotchas
-- Uploaded images must have the following file name: img_id.jpg. Do not choose any img_id between 0 and 10. For instance, 11.jpg works fine.
-- After clicking upload, wait and the image will appear in the grid of original images (it takes a few seconds to be analyzed)
-- The cleanup.sh script does not remove images you upload yourself
-    - To get rid of them, run 'rm -f persisted_data/images/input/img_id.jpg' ('git status' will let you know if you need to manually remove them)
-- If there are duplicate images:
-    - The queue may not have been clear when you ran 'docker-compose up'
-    - Someone may be using the same queue as you
-    - You forgot to delete persistant data after your previous run. Run cleanup.sh and 'git status' to ensure your repo is clean.
-
+# Workflow
+1. Register your user by making a POST request to /api/register_user with a 'username' and 'password'
+2. Optionally retrieve a token by making a GET request to /api/token with your username:password in the Authentication header
+3. Access all other resources by passing your_token:any_value in the Authentication header (using Basic Auth) or by passing username:password for each request
+4. Upload an image by making a POST request to /api/upload_image
+5. Process an image by making a POST request to /api/process_image
+6. Check the status of the image to see if it is finished processing by making a GET request to /api/process_image (once the image is finished processing, it will be removed from the host file system)
+7. See which other images are matches by making a GET request to api/image_matches
 # Architecture
 ![Alt text](/architecture_diagram/architecture_diagram.jpeg?raw=true "Architecture Diagram")

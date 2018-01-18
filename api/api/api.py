@@ -1,36 +1,102 @@
 import os
-from requests import codes
-from flask import Flask, Request
-from werkzeug.utils import secure_filename
-from flask_restful import Resource, Api, reqparse
-from .models.models import Match, OriginalImage, CroppedImage
-from .models.database_manager import DatabaseManager
 import werkzeug
+from werkzeug.utils import secure_filename
+from requests import codes
 from azure.storage.queue import QueueService
+from flask_restful import Resource, Api, reqparse
+from flask import Flask, g
+from .models.models import Match, Image, User
+from .models.database_manager import DatabaseManager
 from .log import get_logger
+from .auth import auth
 
 app = Flask(__name__)
-#app.config['UPLOAD_FOLDER'] = '/app/api/images/input'
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.join(
-                                           os.path.dirname(
-                                           os.path.abspath(__file__)),
-                                           'images'),
-                                           'input')
+app.config['UPLOAD_FOLDER'] = os.path.join(
+    os.path.dirname(
+        os.path.abspath(__file__)),
+    'images')
 app.url_map.strict_slashes = False
 api = Api(app)
 queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
                              account_key=os.environ['STORAGE_ACCOUNT_KEY'])
 queue_service.create_queue(os.environ['IMAGE_PROCESSOR_QUEUE'])
-logger = get_logger(__name__,
-                    'api.log',
-                    os.environ['LOGGING_LEVEL'])
+logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
+
+
+class AuthenticationToken(Resource):
+    method_decorators = [auth.login_required]
+
+    def get(self):
+        token = g.user.generate_auth_token()
+        return {'token': token.decode('ascii')}
+
+
+class RegisterUser(Resource):
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('username',
+                            required=True,
+                            help='username parameter missing in post body')
+        parser.add_argument('password',
+                            required=True,
+                            help='password parameter missing in post body')
+        args = parser.parse_args()
+        username = args['username']
+        password = args['password']
+        db = DatabaseManager()
+        session = db.get_session()
+        query = session.query(User).filter(User.username == username).first()
+        session.close()
+        if query is not None:
+            return 'User already registered', codes.BAD_REQUEST
+        user = User(username=username)
+        user.hash_password(password)
+        session = db.get_session()
+        session.add(user)
+        db.safe_commit(session)
+        return {'username': username}, codes.CREATED
+
+
+class ProcessImg(Resource):
+    method_decorators = [auth.login_required]
+
+    def post(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('img_id',
+                            required=True,
+                            help="img_id missing in the post body")
+        args = parser.parse_args()
+        img_id = args['img_id']
+        try:
+            queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
+                                      img_id)
+            logger.info('img successfully put on queue')
+        except:
+            return 'Server error', codes.INTERNAL_SERVER_ERROR
+        return 'OK', codes.OK
+
+    def get(self, img_id):
+        logger.debug('checking if img has been processed')
+        session = DatabaseManager().get_session()
+        query = session.query(Image).filter(Image.img_id == img_id).first()
+        session.close()
+        if query is not None:
+            return {'finished_processing': True}
+        else:
+            return {'finished_processing': False}
+
 
 class ImgUpload(Resource):
+    method_decorators = [auth.login_required]
+    env_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS']
+    allowed_extensions = env_extensions.lower().split('_')
+
     def post(self):
         logger.debug('uploading img')
         parser = reqparse.RequestParser()
         parser.add_argument('image',
                             type=werkzeug.datastructures.FileStorage,
+                            required=True,
                             help="image missing in post body",
                             location='files')
         args = parser.parse_args()
@@ -39,79 +105,53 @@ class ImgUpload(Resource):
             filename = secure_filename(img.filename)
             try:
                 img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                img_id = img.filename[:-4]
-                queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
-                                          img_id)
-                logger.info('img successfully uploaded and id put on queue')
-                return 'OK', codes.OK
             except:
-                logger.warn('img upload failed')
-                return 'Server Error', codes.INTERNAL_SERVER_ERROR
+                return 'Server error', codes.INTERNAL_SERVER_ERROR
+            logger.info('img successfully uploaded')
+            return 'OK', codes.OK
         else:
             error_msg = '''Image upload failed: please use one of the following 
 extensions --> {}'''.format(self.allowed_extensions)
             return error_msg, codes.BAD_REQUEST
 
-    def get(self, img_id):
-        logger.debug('checking if uploaded img has been processed')
-        session = DatabaseManager().get_session()
-        query = session.query(OriginalImage).filter(OriginalImage.img_id == img_id).first()
-        session.close()
-        if query is not None:
-            return {'finished_processing': True}
-        else:
-            return {'finished_processing': False}
-
     def _allowed_file(self, filename):
-        allowed_extensions = ['jpg']
-        return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+        return ('.' in filename and
+                filename.rsplit('.', 1)[1].lower() in self.allowed_extensions)
 
-class CroppedImgMatchList(Resource):
+
+class ImgMatchList(Resource):
+    method_decorators = [auth.login_required]
+
     def get(self, img_id):
-        logger.debug('getting cropped img match list')
+        logger.debug('getting img match list')
         session = DatabaseManager().get_session()
-        query = session.query(Match).filter(Match.this_cropped_img_id == img_id)
+        query = session.query(Match).filter(Match.this_img_id == img_id)
         imgs = []
         distances = []
         for match in query:
-            imgs.append(match.that_cropped_img_id)
+            imgs.append(match.that_img_id)
             distances.append(match.distance_score)
         session.close()
         return {'imgs': imgs,
                 'distances': distances}
 
-class CroppedImgListFromOriginalImgId(Resource):
-    def get(self, img_id):
-        logger.debug('getting cropped img list given original img id')
-        session = DatabaseManager().get_session()
-        query = session.query(CroppedImage).filter(CroppedImage.original_img_id == img_id)
-        imgs = [cropped_img.img_id for cropped_img in query]
-        session.close()
-        return {'imgs': imgs}
 
-class OriginalImgList(Resource):
+class ImgList(Resource):
+    method_decorators = [auth.login_required]
+
     def get(self):
-        logger.debug('getting original img list')
+        logger.debug('getting img list')
         session = DatabaseManager().get_session()
-        query = session.query(OriginalImage).all()
+        query = session.query(Image).all()
         imgs = [f.img_id for f in query]
         session.close()
         return {'imgs': imgs}
 
-class OriginalImgListFromCroppedImgId(Resource):
-    def get(self, img_id):
-        logger.debug('getting original img list given cropped img id')
-        session = DatabaseManager().get_session()
-        query = session.query(CroppedImage).filter(CroppedImage.img_id == img_id).first()
-        imgs = [query.original_img_id]
-        session.close()
-        return {'imgs': imgs}
 
-api.add_resource(ImgUpload, '/api/upload_image/', '/api/upload_image/<string:img_id>')
-api.add_resource(CroppedImgMatchList, '/api/cropped_image_matches/<string:img_id>')
-api.add_resource(OriginalImgList, '/api/original_images/')
-api.add_resource(OriginalImgListFromCroppedImgId, '/api/original_images/<string:img_id>')
-api.add_resource(CroppedImgListFromOriginalImgId, '/api/cropped_images/<string:img_id>')
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+api.add_resource(ImgUpload, '/api/upload_image')
+api.add_resource(ProcessImg, '/api/process_image/',
+                 '/api/process_image/<string:img_id>')
+api.add_resource(ImgMatchList, '/api/image_matches/<string:img_id>')
+api.add_resource(ImgList, '/api/images')
+api.add_resource(RegisterUser, '/api/register_user')
+api.add_resource(AuthenticationToken, '/api/token')

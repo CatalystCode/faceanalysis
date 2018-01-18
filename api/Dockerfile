@@ -13,7 +13,8 @@ RUN apt-get -y update \
 #    sqlalchemy \
 #    flask-restful \
 #    gunicorn \
-#    azure-storage-queue \
-#    requests
+#    azure-storage-queue
+#    passlib \
+#    Flask-HTTPAuth
 EXPOSE 5000
 ENTRYPOINT ["/bin/bash", "/app/run.sh"]

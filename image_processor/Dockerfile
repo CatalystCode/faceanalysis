@@ -44,7 +44,9 @@ RUN pip install -r requirements.txt
 #    azure-storage-queue \
 #    numpy \
 #    scipy \
-#    face_recognition
-
+#    face_recognition \
+#    passlib \
+#    Flask-HTTPAuth \
+#    requests
 EXPOSE 5000
 ENTRYPOINT ["/bin/bash", "/app/run.sh"]
