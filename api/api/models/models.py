@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import (Column, String, Float, Text,
+from sqlalchemy import (Column, String, Float, Text, Boolean,
                         Integer, DateTime, UniqueConstraint)
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
@@ -44,6 +44,15 @@ class User(Base):
         user = session.query(User).filter(User.id == data['id']).first()
         session.close()
         return user
+
+
+class ImageStatus(Base):
+    __tablename__ = 'imagestatuses'
+
+    id = Column(Integer, primary_key=True)
+    img_id = Column(String(50), unique=True)
+    status = Column(String(50))
+    error_msg = Column(String(50), default=None)
 
 
 class Image(Base):

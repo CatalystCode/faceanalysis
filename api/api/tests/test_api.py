@@ -7,6 +7,7 @@ from time import sleep
 from requests import codes
 from .. import api
 from ..models.database_manager import DatabaseManager
+from ..models.image_status_enum import ImageStatusEnum
 from ..models.models import init_models
 
 
@@ -82,8 +83,10 @@ class ApiTestCase(unittest.TestCase):
             response = self.app.get('/api/process_image/' + img_id,
                                     headers=headers)
             self.assertEqual(response.status_code, expected_status_code)
+            if (expected_status_code == codes.BAD_REQUEST):
+                return response
             data = json.loads(response.get_data(as_text=True))
-            if data['finished_processing']:
+            if data['status'] == ImageStatusEnum.finished_processing.name:
                 return response
             sleep(3)
 
