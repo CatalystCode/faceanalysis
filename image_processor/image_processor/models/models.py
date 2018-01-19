@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import (Column, String, Float, Text, Boolean,
+from sqlalchemy import (Column, String, Float, Text,
                         Integer, DateTime, UniqueConstraint)
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)

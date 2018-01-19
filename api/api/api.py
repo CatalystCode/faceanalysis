@@ -70,20 +70,28 @@ class ProcessImg(Resource):
         img_id = args['img_id']
         db = DatabaseManager()
         session = db.get_session()
-        try:
-            queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
-                                      img_id)
-            session.query(ImageStatus).filter(ImageStatus.img_id == img_id).update(
-                {'status': ImageStatusEnum.on_queue.name})
-            db.safe_commit(session)
-            logger.info('img successfully put on queue')
-        except:
-            error_msg = "img_id could not be added to queue"
-            session.query(ImageStatus).filter(ImageStatus.img_id == img_id).update(
-                {'status': ImageStatusEnum.uploaded.name, 'error_msg': error_msg})
-            db.safe_commit(session)
-            return error_msg, codes.INTERNAL_SERVER_ERROR
-        return 'OK', codes.OK
+        img_status = session.query(ImageStatus).filter(
+            ImageStatus.img_id == img_id).first()
+        if img_status is not None:
+            if img_status.status != ImageStatusEnum.uploaded.name:
+                session.close()
+                return 'Image previously placed on queue', codes.BAD_REQUEST
+            try:
+                queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
+                                          img_id)
+                img_status.status = ImageStatusEnum.on_queue.name
+                db.safe_commit(session)
+                logger.info('img successfully put on queue')
+                return 'OK', codes.OK
+            except:
+                error_msg = "img_id could not be added to queue"
+                img_status.status = ImageStatusEnum.uploaded.name
+                img_status.error_msg = error_msg
+                db.safe_commit(session)
+                return error_msg, codes.INTERNAL_SERVER_ERROR
+        else:
+            session.close()
+            return 'Image not yet uploaded', codes.BAD_REQUEST
 
     def get(self, img_id):
         logger.debug('checking if img has been processed')
@@ -95,7 +103,7 @@ class ProcessImg(Resource):
             return {'status': img_status.status,
                     'error_msg': img_status.error_msg}
         else:
-            return 'User already registered', codes.BAD_REQUEST
+            return 'Image not yet uploaded', codes.BAD_REQUEST
 
 
 class ImgUpload(Resource):
@@ -113,22 +121,29 @@ class ImgUpload(Resource):
                             location='files')
         args = parser.parse_args()
         img = args['image']
+        db = DatabaseManager()
         if self._allowed_file(img.filename):
             filename = secure_filename(img.filename)
+            img_id = filename[:filename.find('.')]
+            session = db.get_session()
+            prev_img_upload = session.query(ImageStatus).filter(
+                ImageStatus.img_id == img_id).first()
+            session.close()
+            if prev_img_upload is not None:
+                error_msg = "Image upload failed: image previously uploaded"
+                return error_msg, codes.BAD_REQUEST
             try:
-                img_id = filename[:filename.find('.')]
                 img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 img_status = ImageStatus(img_id=img_id,
                                          status=ImageStatusEnum.uploaded.name,
                                          error_msg=None)
-                db = DatabaseManager()
                 session = db.get_session()
                 session.add(img_status)
                 db.safe_commit(session)
+                logger.info('img successfully uploaded')
+                return 'OK', codes.OK
             except:
                 return 'Server error', codes.INTERNAL_SERVER_ERROR
-            logger.info('img successfully uploaded')
-            return 'OK', codes.OK
         else:
             error_msg = '''Image upload failed: please use one of the following 
 extensions --> {}'''.format(self.allowed_extensions)
@@ -168,10 +183,10 @@ class ImgList(Resource):
         return {'imgs': imgs}
 
 
-api.add_resource(ImgUpload, '/api/upload_image')
-api.add_resource(ProcessImg, '/api/process_image/',
-                 '/api/process_image/<string:img_id>')
-api.add_resource(ImgMatchList, '/api/image_matches/<string:img_id>')
-api.add_resource(ImgList, '/api/images')
-api.add_resource(RegisterUser, '/api/register_user')
-api.add_resource(AuthenticationToken, '/api/token')
+api.add_resource(ImgUpload, '/api/v1/upload_image')
+api.add_resource(ProcessImg, '/api/v1/process_image/',
+                 '/api/v1/process_image/<string:img_id>')
+api.add_resource(ImgMatchList, '/api/v1/image_matches/<string:img_id>')
+api.add_resource(ImgList, '/api/v1/images')
+api.add_resource(RegisterUser, '/api/v1/register_user')
+api.add_resource(AuthenticationToken, '/api/v1/token')

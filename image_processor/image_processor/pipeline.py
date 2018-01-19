@@ -115,10 +115,23 @@ class Pipeline:
             ImageStatus.img_id == img_id).update(update_fields)
         self.db.safe_commit(session)
 
+    def _img_should_be_processed(self, img_id):
+        session = self.db.get_session()
+        img_status = session.query(ImageStatus).filter(
+            ImageStatus.img_id == img_id).first()
+        session.close()
+        if img_status is not None:
+            return img_status.status == ImageStatusEnum.on_queue.name
+        else:
+            return False
+
     def _handle_message_from_queue(self, message):
         self.logger.debug("handling message from queue")
         session = self.db.get_session()
         curr_img_id = message.content
+        if not self._img_should_be_processed(curr_img_id):
+            session.close()
+            return
         self._update_img_status(
             curr_img_id, status=ImageStatusEnum.processing.name)
         curr_img = self._process_img(curr_img_id, session)

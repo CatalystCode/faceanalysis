@@ -2,8 +2,7 @@ import enum
 
 
 class ImageStatusEnum(enum.Enum):
-    finished_processing = 5
-    processing = 4
-    on_queue = 3
-    uploaded = 2
-    not_yet_uploaded = 1
+    finished_processing = 4
+    processing = 3
+    on_queue = 2
+    uploaded = 1
