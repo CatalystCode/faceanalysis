@@ -13,7 +13,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - "./nginx/conf.d:/etc/nginx/conf.d"
+      - "./nginx/conf.d/api.conf:/etc/nginx/conf.d/api.conf"
   image_processor:
     restart: always
     build: ./image_processor
