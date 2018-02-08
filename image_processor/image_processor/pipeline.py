@@ -4,7 +4,8 @@ import numpy as np
 import face_recognition as fr
 from .queue_poll import QueuePoll
 from .models.database_manager import DatabaseManager
-from .models.models import Image, FeatureMapping, Match
+from .models.models import Image, FeatureMapping, Match, ImageStatus
+from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
 
 
@@ -103,15 +104,44 @@ class Pipeline:
                 "distance_score": distance_score
             })
 
+    def _update_img_status(self, img_id, status=None, error_msg=None):
+        session = self.db.get_session()
+        update_fields = {}
+        if status:
+            update_fields['status'] = status
+        if error_msg:
+            update_fields['error_msg'] = error_msg
+        session.query(ImageStatus).filter(
+            ImageStatus.img_id == img_id).update(update_fields)
+        self.db.safe_commit(session)
+
+    def _img_should_be_processed(self, img_id):
+        session = self.db.get_session()
+        img_status = session.query(ImageStatus).filter(
+            ImageStatus.img_id == img_id).first()
+        session.close()
+        if img_status is not None:
+            return img_status.status == ImageStatusEnum.on_queue.name
+        else:
+            return False
+
     def _handle_message_from_queue(self, message):
         self.logger.debug("handling message from queue")
         session = self.db.get_session()
         curr_img_id = message.content
+        if not self._img_should_be_processed(curr_img_id):
+            session.close()
+            return
+        self._update_img_status(
+            curr_img_id, status=ImageStatusEnum.processing.name)
         curr_img = self._process_img(curr_img_id, session)
         if curr_img is not None:
             prev_img_ids, prev_features = self._get_img_ids_and_features()
             curr_matches = []
             face_locations = fr.face_locations(curr_img)
+            if not len(face_locations):
+                error_msg = "No faces found in image"
+                self._update_img_status(curr_img_id, error_msg=error_msg)
             for face_location in face_locations:
                 top, right, bottom, left = face_location
                 curr_cropped_img = curr_img[top:bottom, left:right]
@@ -135,6 +165,11 @@ class Pipeline:
                                       curr_match["that_img_id"],
                                       curr_match["distance_score"],
                                       session)
+        else:
+            error_msg = "Image processed before uploaded"
+            self._update_img_status(curr_img_id, error_msg=error_msg)
+        self._update_img_status(
+            curr_img_id, status=ImageStatusEnum.finished_processing.name)
         self.db.safe_commit(session)
         self._delete_img(curr_img_id)
 

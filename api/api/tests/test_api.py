@@ -7,10 +7,12 @@ from time import sleep
 from requests import codes
 from .. import api
 from ..models.database_manager import DatabaseManager
+from ..models.image_status_enum import ImageStatusEnum
 from ..models.models import init_models
 
 
 class ApiTestCase(unittest.TestCase):
+    BASE_PATH = '/api/v1'
     has_registered_user = False
 
     def setUp(self):
@@ -18,72 +20,75 @@ class ApiTestCase(unittest.TestCase):
         self.app = api.app.test_client()
         self.db = DatabaseManager()
         init_models(self.db.engine)
-
+        username = 'username'
+        password = 'password'
         if not ApiTestCase.has_registered_user:
-            self._register_default_user()
+            self._register_default_user(username, password)
+        token_response = self._get_token(username, password)
+        token = json.loads(token_response.get_data(as_text=True))['token']
+        self.headers = self._get_basic_auth_headers(token, 'any value')
 
-        token_response = self._get_token()
-        self.token = json.loads(token_response.get_data(as_text=True))['token']
-
-    def _register_default_user(self, expected_status_code=codes.CREATED):
-        data = {'username': 'username',
-                'password': 'password'}
-        response = self.app.post('/api/register_user', data=data)
+    def _register_default_user(self,
+                               username,
+                               password,
+                               expected_status_code=codes.CREATED):
+        data = {'username': username,
+                'password': password}
+        response = self.app.post(self.BASE_PATH + '/register_user', data=data)
         self.assertEqual(response.status_code, expected_status_code)
         ApiTestCase.has_registered_user = True
         return response
 
-    def _get_token(self):
-        headers = self._get_basic_auth_headers()
-        response = self.app.get('/api/token', headers=headers)
+    def _get_token(self, username, password):
+        headers = self._get_basic_auth_headers(username, password)
+        response = self.app.get(self.BASE_PATH + '/token',
+                                headers=headers)
         self.assertEqual(response.status_code, codes.OK)
         return response
 
     def _upload_img(self, fname, expected_status_code=codes.OK):
-        headers = self._get_basic_auth_headers()
         img_path = self._get_img_path(fname)
         img = self._get_img(img_path, fname)
         data = {'image': img}
-        response = self.app.post('/api/upload_image',
+        response = self.app.post(self.BASE_PATH + '/upload_image',
                                  content_type='multipart/form-data',
                                  data=data,
-                                 headers=headers)
+                                 headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
     def _process_img(self, img_id, expected_status_code=codes.OK):
-        headers = self._get_basic_auth_headers()
         data = {'img_id': img_id}
-        response = self.app.post('/api/process_image',
+        response = self.app.post(self.BASE_PATH + '/process_image',
                                  data=data,
-                                 headers=headers)
+                                 headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
     def _get_imgs(self, expected_status_code=codes.OK):
-        headers = self._get_basic_auth_headers()
-        response = self.app.get('/api/images/',
-                                headers=headers)
+        response = self.app.get(self.BASE_PATH + '/images/',
+                                headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
     def _get_matches(self, img_id, expected_status_code=codes.OK):
-        headers = self._get_basic_auth_headers()
-        response = self.app.get('/api/image_matches/' + img_id,
-                                headers=headers)
+        response = self.app.get(self.BASE_PATH + '/image_matches/' + img_id,
+                                headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
     def _wait_for_img_to_finish_processing(self,
                                            img_id,
                                            expected_status_code=codes.OK):
-        headers = self._get_basic_auth_headers()
         while True:
-            response = self.app.get('/api/process_image/' + img_id,
-                                    headers=headers)
+            rel_path = '/process_image/'
+            response = self.app.get(self.BASE_PATH + rel_path + img_id,
+                                    headers=self.headers)
             self.assertEqual(response.status_code, expected_status_code)
+            if (expected_status_code == codes.BAD_REQUEST):
+                return response
             data = json.loads(response.get_data(as_text=True))
-            if data['finished_processing']:
+            if data['status'] == ImageStatusEnum.finished_processing.name:
                 return response
             sleep(3)
 
@@ -118,9 +123,8 @@ class ApiTestCase(unittest.TestCase):
         self._test_end_to_end_with_matching_imgs(fnames)
 
     def test_end_to_end_with_one_to_multiple_faces_per_img_that_match(self):
-        fnames = {'3.jpg', '6.jpg'}  # CANNOT REUSE PHOTOS
-        # self._test_end_to_end_with_matching_imgs(fnames)
-        pass
+        fnames = {'3.jpg', '6.jpg'}
+        self._test_end_to_end_with_matching_imgs(fnames)
 
     def test_upload_and_process_img_without_face(self):
         fname = '9.jpg'
@@ -133,23 +137,28 @@ class ApiTestCase(unittest.TestCase):
         imgs_data = json.loads(imgs_response.get_data(as_text=True))
         self.assertIn(img_id, imgs_data['imgs'])
 
-    @unittest.skip("INFINITE LOOP")
     def test_processing_img_that_has_not_yet_been_uploaded(self):
-        pass
+        img_id_not_yet_uploaded = '100'
+        self._process_img(img_id_not_yet_uploaded,
+                          expected_status_code=codes.BAD_REQUEST)
 
     def test_upload_twice(self):
         fname = '4.jpg'
         self._upload_img(fname)
+        self._upload_img(fname, expected_status_code=codes.BAD_REQUEST)
 
     def test_upload_and_process_twice(self):
         fname = '5.jpg'
         img_id = fname[0]
 
         self._upload_img(fname)
-        for fname in [fname, fname]:
-            self._process_img(img_id)
+        for c, fname in enumerate([fname, fname]):
+            if c == 1:
+                self._process_img(img_id,
+                                  expected_status_code=codes.BAD_REQUEST)
+            else:
+                self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
-
             imgs_response = self._get_imgs()
             imgs_data = json.loads(imgs_response.get_data(as_text=True))
             self.assertIn(img_id, imgs_data['imgs'])
@@ -176,11 +185,10 @@ class ApiTestCase(unittest.TestCase):
     def test_upload_arbitrarily_large_file(self):
         pass
 
-    # hlper utility methods
-    def _get_basic_auth_headers(self):
-        # auth_encoding = b64encode(b"%s:%s" % (self.username.encode(),
-        #                                      self.password.encode()))
-        auth_encoding = b64encode(b'username:password').decode('ascii')
+    # helper utility methods
+    def _get_basic_auth_headers(self, username_or_token, password):
+        encoding = username_or_token + ':' + password
+        auth_encoding = b64encode(encoding.encode()).decode('ascii')
         headers = {'Authorization': 'Basic ' + auth_encoding}
         return headers
 

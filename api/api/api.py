@@ -5,8 +5,9 @@ from requests import codes
 from azure.storage.queue import QueueService
 from flask_restful import Resource, Api, reqparse
 from flask import Flask, g
-from .models.models import Match, Image, User
+from .models.models import Match, Image, User, ImageStatus
 from .models.database_manager import DatabaseManager
+from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
 from .auth import auth
 
@@ -67,23 +68,42 @@ class ProcessImg(Resource):
                             help="img_id missing in the post body")
         args = parser.parse_args()
         img_id = args['img_id']
-        try:
-            queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
-                                      img_id)
-            logger.info('img successfully put on queue')
-        except:
-            return 'Server error', codes.INTERNAL_SERVER_ERROR
-        return 'OK', codes.OK
+        db = DatabaseManager()
+        session = db.get_session()
+        img_status = session.query(ImageStatus).filter(
+            ImageStatus.img_id == img_id).first()
+        if img_status is not None:
+            if img_status.status != ImageStatusEnum.uploaded.name:
+                session.close()
+                return 'Image previously placed on queue', codes.BAD_REQUEST
+            try:
+                queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
+                                          img_id)
+                img_status.status = ImageStatusEnum.on_queue.name
+                db.safe_commit(session)
+                logger.info('img successfully put on queue')
+                return 'OK', codes.OK
+            except:
+                error_msg = "img_id could not be added to queue"
+                img_status.status = ImageStatusEnum.uploaded.name
+                img_status.error_msg = error_msg
+                db.safe_commit(session)
+                return error_msg, codes.INTERNAL_SERVER_ERROR
+        else:
+            session.close()
+            return 'Image not yet uploaded', codes.BAD_REQUEST
 
     def get(self, img_id):
         logger.debug('checking if img has been processed')
         session = DatabaseManager().get_session()
-        query = session.query(Image).filter(Image.img_id == img_id).first()
+        img_status = session.query(ImageStatus).filter(
+            ImageStatus.img_id == img_id).first()
         session.close()
-        if query is not None:
-            return {'finished_processing': True}
+        if img_status is not None:
+            return {'status': img_status.status,
+                    'error_msg': img_status.error_msg}
         else:
-            return {'finished_processing': False}
+            return 'Image not yet uploaded', codes.BAD_REQUEST
 
 
 class ImgUpload(Resource):
@@ -101,14 +121,29 @@ class ImgUpload(Resource):
                             location='files')
         args = parser.parse_args()
         img = args['image']
+        db = DatabaseManager()
         if self._allowed_file(img.filename):
             filename = secure_filename(img.filename)
+            img_id = filename[:filename.find('.')]
+            session = db.get_session()
+            prev_img_upload = session.query(ImageStatus).filter(
+                ImageStatus.img_id == img_id).first()
+            session.close()
+            if prev_img_upload is not None:
+                error_msg = "Image upload failed: image previously uploaded"
+                return error_msg, codes.BAD_REQUEST
             try:
                 img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                img_status = ImageStatus(img_id=img_id,
+                                         status=ImageStatusEnum.uploaded.name,
+                                         error_msg=None)
+                session = db.get_session()
+                session.add(img_status)
+                db.safe_commit(session)
+                logger.info('img successfully uploaded')
+                return 'OK', codes.OK
             except:
                 return 'Server error', codes.INTERNAL_SERVER_ERROR
-            logger.info('img successfully uploaded')
-            return 'OK', codes.OK
         else:
             error_msg = '''Image upload failed: please use one of the following 
 extensions --> {}'''.format(self.allowed_extensions)
@@ -148,10 +183,10 @@ class ImgList(Resource):
         return {'imgs': imgs}
 
 
-api.add_resource(ImgUpload, '/api/upload_image')
-api.add_resource(ProcessImg, '/api/process_image/',
-                 '/api/process_image/<string:img_id>')
-api.add_resource(ImgMatchList, '/api/image_matches/<string:img_id>')
-api.add_resource(ImgList, '/api/images')
-api.add_resource(RegisterUser, '/api/register_user')
-api.add_resource(AuthenticationToken, '/api/token')
+api.add_resource(ImgUpload, '/api/v1/upload_image')
+api.add_resource(ProcessImg, '/api/v1/process_image/',
+                 '/api/v1/process_image/<string:img_id>')
+api.add_resource(ImgMatchList, '/api/v1/image_matches/<string:img_id>')
+api.add_resource(ImgList, '/api/v1/images')
+api.add_resource(RegisterUser, '/api/v1/register_user')
+api.add_resource(AuthenticationToken, '/api/v1/token')

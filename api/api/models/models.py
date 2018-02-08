@@ -46,6 +46,15 @@ class User(Base):
         return user
 
 
+class ImageStatus(Base):
+    __tablename__ = 'imagestatuses'
+
+    id = Column(Integer, primary_key=True)
+    img_id = Column(String(50), unique=True)
+    status = Column(String(50))
+    error_msg = Column(String(50), default=None)
+
+
 class Image(Base):
     __tablename__ = 'images'
 
