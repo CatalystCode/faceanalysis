@@ -8,12 +8,11 @@ from requests import codes
 from .. import api
 from ..models.database_manager import DatabaseManager
 from ..models.image_status_enum import ImageStatusEnum
-from ..models.models import init_models
+from ..models.models import init_models, delete_models
 
 
 class ApiTestCase(unittest.TestCase):
     BASE_PATH = '/api/v1'
-    has_registered_user = False
 
     def setUp(self):
         api.app.testing = True
@@ -22,11 +21,13 @@ class ApiTestCase(unittest.TestCase):
         init_models(self.db.engine)
         username = 'username'
         password = 'password'
-        if not ApiTestCase.has_registered_user:
-            self._register_default_user(username, password)
+        self._register_default_user(username, password)
         token_response = self._get_token(username, password)
         token = json.loads(token_response.get_data(as_text=True))['token']
         self.headers = self._get_basic_auth_headers(token, 'any value')
+
+    def tearDown(self):
+        delete_models(self.db.engine)  
 
     def _register_default_user(self,
                                username,
