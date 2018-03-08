@@ -90,3 +90,7 @@ class Match(Base):
 
 def init_models(database_engine):
     Base.metadata.create_all(database_engine)
+
+
+def delete_models(database_engine):
+    Base.metadata.drop_all(database_engine)
