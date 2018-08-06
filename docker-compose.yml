@@ -17,7 +17,7 @@ services:
   worker:
     restart: always
     image: faceanalysis_app:${BUILD_TAG}
-    build: ./api
+    build: ./app
     command: ["python3", "worker.py"]
     depends_on:
       - mysql
@@ -27,14 +27,14 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
-      - "${DATA_DIR}:/app/api/images"
+      - "${DATA_DIR}:/app/faceanalysis/images"
     env_file:
       - ./environment_variables.env
 
   api:
     restart: always
     image: faceanalysis_app:${BUILD_TAG}
-    build: ./api
+    build: ./app
     depends_on:
       - worker
       - mysql
@@ -44,7 +44,7 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
-      - "${DATA_DIR}:/app/api/images"
+      - "${DATA_DIR}:/app/faceanalysis/images"
     env_file:
       - ./environment_variables.env
 

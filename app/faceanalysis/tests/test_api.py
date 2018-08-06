@@ -5,10 +5,10 @@ from base64 import b64encode
 from io import BytesIO
 from time import sleep
 from http import HTTPStatus
-from api.api import app
-from api.models.database_manager import DatabaseManager
-from api.models.image_status_enum import ImageStatusEnum
-from api.models.models import init_models, delete_models
+from faceanalysis.api import app
+from faceanalysis.models.database_manager import DatabaseManager
+from faceanalysis.models.image_status_enum import ImageStatusEnum
+from faceanalysis.models.models import init_models, delete_models
 
 
 class ApiTestCase(unittest.TestCase):
