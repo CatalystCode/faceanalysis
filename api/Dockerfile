@@ -11,6 +11,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+ARG DEVTOOLS=false
+COPY requirements-dev.txt .
+RUN if [ "$DEVTOOLS" = "true" ]; then pip install --no-cache-dir -r requirements-dev.txt; fi
+
 COPY . /app
 
 EXPOSE 5000

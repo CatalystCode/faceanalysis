@@ -1,7 +1,9 @@
+# pylint: disable=no-self-use
+
 import os
+from http import HTTPStatus
 import werkzeug
 from werkzeug.utils import secure_filename
-from http import HTTPStatus
 from azure.storage.queue import QueueService
 from flask_restful import Resource, Api, reqparse
 from flask import Flask, g
@@ -61,6 +63,7 @@ class RegisterUser(Resource):
 class ProcessImg(Resource):
     method_decorators = [auth.login_required]
 
+    # pylint: disable=broad-except
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('img_id',
@@ -75,7 +78,8 @@ class ProcessImg(Resource):
         if img_status is not None:
             if img_status.status != ImageStatusEnum.uploaded.name:
                 session.close()
-                return 'Image previously placed on queue', HTTPStatus.BAD_REQUEST.value
+                return ('Image previously placed on queue',
+                        HTTPStatus.BAD_REQUEST.value)
             try:
                 queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
                                           img_id)
@@ -83,7 +87,7 @@ class ProcessImg(Resource):
                 db.safe_commit(session)
                 logger.info('img successfully put on queue')
                 return 'OK', HTTPStatus.OK.value
-            except:
+            except Exception:
                 error_msg = "img_id could not be added to queue"
                 img_status.status = ImageStatusEnum.uploaded.name
                 img_status.error_msg = error_msg
@@ -102,8 +106,7 @@ class ProcessImg(Resource):
         if img_status is not None:
             return {'status': img_status.status,
                     'error_msg': img_status.error_msg}
-        else:
-            return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
+        return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
 
 
 class ImgUpload(Resource):
@@ -111,6 +114,7 @@ class ImgUpload(Resource):
     env_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS']
     allowed_extensions = env_extensions.lower().split('_')
 
+    # pylint: disable=broad-except
     def post(self):
         logger.debug('uploading img')
         parser = reqparse.RequestParser()
@@ -142,11 +146,12 @@ class ImgUpload(Resource):
                 db.safe_commit(session)
                 logger.info('img successfully uploaded')
                 return 'OK', HTTPStatus.OK.value
-            except:
+            except Exception:
                 return 'Server error', HTTPStatus.INTERNAL_SERVER_ERROR.value
         else:
-            error_msg = '''Image upload failed: please use one of the following 
-extensions --> {}'''.format(self.allowed_extensions)
+            error_msg = ('Image upload failed: please use one of the '
+                         'following extensions --> {}'
+                         .format(self.allowed_extensions))
             return error_msg, HTTPStatus.BAD_REQUEST.value
 
     def _allowed_file(self, filename):
@@ -157,6 +162,7 @@ extensions --> {}'''.format(self.allowed_extensions)
 class ImgMatchList(Resource):
     method_decorators = [auth.login_required]
 
+    # pylint: disable=assignment-from-no-return
     def get(self, img_id):
         logger.debug('getting img match list')
         session = DatabaseManager().get_session()
@@ -190,3 +196,5 @@ api.add_resource(ImgMatchList, '/api/v1/image_matches/<string:img_id>')
 api.add_resource(ImgList, '/api/v1/images')
 api.add_resource(RegisterUser, '/api/v1/register_user')
 api.add_resource(AuthenticationToken, '/api/v1/token')
+
+# pylint: enable=no-self-use

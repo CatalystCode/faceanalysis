@@ -33,17 +33,18 @@ class DatabaseManager:
                                     pool_recycle=3600,
                                     echo=True)
 
-        self.Session = sessionmaker(bind=self.engine)
+        self.session_factory = sessionmaker(bind=self.engine)
         self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
 
     def get_session(self):
-        return self.Session()
+        return self.session_factory()
 
+    # pylint: disable=broad-except
     def safe_commit(self, session):
         try:
             session.commit()
             self.logger.debug("session committed")
-        except:
+        except Exception:
             session.rollback()
             self.logger.debug("session rolled back")
         finally:

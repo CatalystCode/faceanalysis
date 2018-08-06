@@ -24,10 +24,10 @@ class ApiTestCase(unittest.TestCase):
         self._register_default_user(username, password)
         token_response = self._get_token(username, password)
         token = json.loads(token_response.get_data(as_text=True))['token']
-        self.headers = self._get_basic_auth_headers(token, 'any value')
+        self.headers = _get_basic_auth_headers(token, 'any value')
 
     def tearDown(self):
-        delete_models(self.db.engine)  
+        delete_models(self.db.engine)
 
     def _register_default_user(self,
                                username,
@@ -41,15 +41,15 @@ class ApiTestCase(unittest.TestCase):
         return response
 
     def _get_token(self, username, password):
-        headers = self._get_basic_auth_headers(username, password)
+        headers = _get_basic_auth_headers(username, password)
         response = self.app.get(self.BASE_PATH + '/token',
                                 headers=headers)
         self.assertEqual(response.status_code, HTTPStatus.OK.value)
         return response
 
     def _upload_img(self, fname, expected_status_code=HTTPStatus.OK.value):
-        img_path = self._get_img_path(fname)
-        img = self._get_img(img_path, fname)
+        img_path = _get_img_path(fname)
+        img = _get_img(img_path, fname)
         data = {'image': img}
         response = self.app.post(self.BASE_PATH + '/upload_image',
                                  content_type='multipart/form-data',
@@ -78,15 +78,14 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
-    def _wait_for_img_to_finish_processing(self,
-                                           img_id,
-                                           expected_status_code=HTTPStatus.OK.value):
+    def _wait_for_img_to_finish_processing(
+            self, img_id, expected_status_code=HTTPStatus.OK.value):
         while True:
             rel_path = '/process_image/'
             response = self.app.get(self.BASE_PATH + rel_path + img_id,
                                     headers=self.headers)
             self.assertEqual(response.status_code, expected_status_code)
-            if (expected_status_code == HTTPStatus.BAD_REQUEST.value):
+            if expected_status_code == HTTPStatus.BAD_REQUEST.value:
                 return response
             data = json.loads(response.get_data(as_text=True))
             if data['status'] == ImageStatusEnum.finished_processing.name:
@@ -146,17 +145,16 @@ class ApiTestCase(unittest.TestCase):
     def test_upload_twice(self):
         fname = '4.jpg'
         self._upload_img(fname)
-        self._upload_img(fname, expected_status_code=HTTPStatus.BAD_REQUEST.value)
+        self._upload_img(fname, HTTPStatus.BAD_REQUEST.value)
 
     def test_upload_and_process_twice(self):
         fname = '5.jpg'
         img_id = fname[0]
 
         self._upload_img(fname)
-        for c, fname in enumerate([fname, fname]):
-            if c == 1:
-                self._process_img(img_id,
-                                  expected_status_code=HTTPStatus.BAD_REQUEST.value)
+        for i, fname in enumerate([fname, fname]):
+            if i == 1:
+                self._process_img(img_id, HTTPStatus.BAD_REQUEST.value)
             else:
                 self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
@@ -186,19 +184,21 @@ class ApiTestCase(unittest.TestCase):
     def test_upload_arbitrarily_large_file(self):
         pass
 
-    # helper utility methods
-    def _get_basic_auth_headers(self, username_or_token, password):
-        encoding = username_or_token + ':' + password
-        auth_encoding = b64encode(encoding.encode()).decode('ascii')
-        headers = {'Authorization': 'Basic ' + auth_encoding}
-        return headers
 
-    def _get_img(self, img_path, fname):
-        with open(img_path, 'rb') as img:
-            image = (BytesIO(img.read()), fname)
-            return image
+def _get_basic_auth_headers(username_or_token, password):
+    encoding = username_or_token + ':' + password
+    auth_encoding = b64encode(encoding.encode()).decode('ascii')
+    headers = {'Authorization': 'Basic ' + auth_encoding}
+    return headers
 
-    def _get_img_path(self, fname):
-        dirname = os.path.dirname(os.path.abspath(__file__))
-        img_path = os.path.join(os.path.join(dirname, 'images'), fname)
-        return img_path
+
+def _get_img(img_path, fname):
+    with open(img_path, 'rb') as img:
+        image = (BytesIO(img.read()), fname)
+        return image
+
+
+def _get_img_path(fname):
+    dirname = os.path.dirname(os.path.abspath(__file__))
+    img_path = os.path.join(os.path.join(dirname, 'images'), fname)
+    return img_path
