@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
-./delete-test-data.sh
-docker-compose -f docker-compose-test.yml down
-docker-compose -f docker-compose-test.yml build
-docker-compose -f docker-compose-test.yml up
+
+set -e
+
+app_port="8080"
+data_dir="$(mktemp -d)"
+db_dir="$(mktemp -d)"
+
+cleanup() { rm -rf "${data_dir}" "${db_dir}"; }
+trap cleanup EXIT
+
+docker-compose down
+docker-compose build
+
+APP_PORT="${app_port}" \
+DATA_DIR="${data_dir}" \
+DB_DIR="${db_dir}" \
+docker-compose up

@@ -2,7 +2,7 @@ version: '3'
 services:
   nginx:
     restart: always
-    image: nginx:1.7.8
+    build: ./nginx
     depends_on:
       - api
     logging:
@@ -11,9 +11,7 @@ services:
         max-size: "50m"
         max-file: "5"
     ports:
-      - "80:80"
-    volumes:
-      - "./nginx/conf.d/api.conf:/etc/nginx/conf.d/api.conf"
+      - "${APP_PORT}:80"
   image_processor:
     restart: always
     build: ./image_processor
@@ -25,7 +23,7 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
-      - "./persisted_data/prod/images:/app/image_processor/images"
+      - "${DATA_DIR}:/app/image_processor/images"
     env_file:
       - ./environment_variables.env
   api:
@@ -42,7 +40,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - "./persisted_data/prod/images:/app/api/images"
+      - "${DATA_DIR}:/app/api/images"
     env_file:
       - ./environment_variables.env
   mysql:
@@ -54,6 +52,6 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
-      - "./persisted_data/prod/database:/var/lib/mysql"
+      - "${DB_DIR}:/var/lib/mysql"
     env_file:
       - ./environment_variables.env

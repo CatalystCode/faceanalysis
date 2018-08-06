@@ -6,8 +6,6 @@
 5. To run tests, set TESTING=TRUE in environment_variables.yml and type './run-test.sh' from within the top level directory
 6. To run in production, set TESTING=FALSE in environment_variables.yml and type './run-prod.sh' from within the top level directory
 7. If you would like to clear the production database, run './delete-prod-data.sh'
-8. If you would like to clear the testing database, run './delete-test-data.sh'
-- Each time you run tests, the test database needs to be deleted first. Therefore, when you run './run-test.sh', it first deletes any previous test database
 - Each time you run in production, **you most likely do not want to delete the production database**. Therefore, when you run './run-prod.sh', the previous database will not be deleted. You have the option to manually delete it by running './delete-prod-data.sh'
 
 # Workflow
