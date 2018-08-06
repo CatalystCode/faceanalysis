@@ -1,5 +1,5 @@
+# pylint: disable=too-few-public-methods
 import os
-from .database_manager import DatabaseManager
 from passlib.apps import custom_app_context as pwd_context
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -9,6 +9,8 @@ from sqlalchemy import (Column, String, Float, Text,
                         Integer, DateTime, UniqueConstraint)
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
+from .database_manager import DatabaseManager
+
 Base = declarative_base()
 
 
@@ -26,16 +28,17 @@ class User(Base):
         return pwd_context.verify(password, self.password_hash)
 
     def generate_auth_token(self, expiration=None):
+        token = os.environ['TOKEN_SECRET_KEY']
         expiration = expiration or int(
             os.environ['DEFAULT_TOKEN_EXPIRATION_SECS'])
-        s = Serializer(os.environ['TOKEN_SECRET_KEY'], expires_in=expiration)
-        return s.dumps({'id': self.id})
+        serializer = Serializer(token, expires_in=expiration)
+        return serializer.dumps({'id': self.id})
 
     @staticmethod
     def verify_auth_token(token):
-        s = Serializer(os.environ['TOKEN_SECRET_KEY'])
+        serializer = Serializer(os.environ['TOKEN_SECRET_KEY'])
         try:
-            data = s.loads(token)
+            data = serializer.loads(token)
         except SignatureExpired:
             return None
         except BadSignature:
@@ -94,3 +97,5 @@ def init_models(database_engine):
 
 def delete_models(database_engine):
     Base.metadata.drop_all(database_engine)
+
+# pylint: enable=too-few-public-methods

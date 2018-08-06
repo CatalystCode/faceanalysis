@@ -12,7 +12,9 @@ trap cleanup EXIT
 docker-compose down
 docker-compose build --build-arg DEVTOOLS=true
 
+docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/api
+
 APP_PORT="${app_port}" \
 DATA_DIR="${data_dir}" \
 DB_DIR="${db_dir}" \
-docker-compose run api nose2
+docker-compose run --rm api nose2
