@@ -40,4 +40,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 
 ENTRYPOINT ["./wait-for-dependencies.sh"]
-CMD ["python", "main.py"]
+CMD ["python3", "main.py"]
