@@ -13,6 +13,7 @@ docker-compose down
 docker-compose build --build-arg DEVTOOLS=true
 
 docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/api
+docker-compose run --rm --no-deps --entrypoint=python3 api -m flake8 /app/api
 
 APP_PORT="${app_port}" \
 DATA_DIR="${data_dir}" \

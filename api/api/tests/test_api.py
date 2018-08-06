@@ -78,9 +78,8 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
-    def _wait_for_img_to_finish_processing(self,
-                                           img_id,
-                                           expected_status_code=HTTPStatus.OK.value):
+    def _wait_for_img_to_finish_processing(
+            self, img_id, expected_status_code=HTTPStatus.OK.value):
         while True:
             rel_path = '/process_image/'
             response = self.app.get(self.BASE_PATH + rel_path + img_id,
@@ -146,7 +145,7 @@ class ApiTestCase(unittest.TestCase):
     def test_upload_twice(self):
         fname = '4.jpg'
         self._upload_img(fname)
-        self._upload_img(fname, expected_status_code=HTTPStatus.BAD_REQUEST.value)
+        self._upload_img(fname, HTTPStatus.BAD_REQUEST.value)
 
     def test_upload_and_process_twice(self):
         fname = '5.jpg'
@@ -155,8 +154,7 @@ class ApiTestCase(unittest.TestCase):
         self._upload_img(fname)
         for i, fname in enumerate([fname, fname]):
             if i == 1:
-                self._process_img(img_id,
-                                  expected_status_code=HTTPStatus.BAD_REQUEST.value)
+                self._process_img(img_id, HTTPStatus.BAD_REQUEST.value)
             else:
                 self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)

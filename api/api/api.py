@@ -78,7 +78,8 @@ class ProcessImg(Resource):
         if img_status is not None:
             if img_status.status != ImageStatusEnum.uploaded.name:
                 session.close()
-                return 'Image previously placed on queue', HTTPStatus.BAD_REQUEST.value
+                return ('Image previously placed on queue',
+                        HTTPStatus.BAD_REQUEST.value)
             try:
                 queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
                                           img_id)
