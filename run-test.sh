@@ -15,4 +15,4 @@ docker-compose build
 APP_PORT="${app_port}" \
 DATA_DIR="${data_dir}" \
 DB_DIR="${db_dir}" \
-docker-compose up
+docker-compose run api nose2
