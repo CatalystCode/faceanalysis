@@ -1,6 +1,8 @@
+# pylint: disable=too-few-public-methods
+
 import os
-from azure.storage.queue import QueueService
 from time import sleep
+from azure.storage.queue import QueueService
 from .log import get_logger
 
 
@@ -14,6 +16,7 @@ class QueuePoll:
         self.queue_service.create_queue(self.queue_name)
         self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
 
+    # pylint: disable=broad-except
     def _get_messages_from_queue(self):
         messages = []
         try:
@@ -32,3 +35,5 @@ class QueuePoll:
                     self.queue_name, message.id, message.pop_receipt)
                 yield message
             sleep(3)
+
+# pylint: enable=too-few-public-methods
