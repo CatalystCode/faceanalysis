@@ -17,7 +17,10 @@ services:
   worker:
     restart: always
     image: faceanalysis_app:${BUILD_TAG}
-    build: ./app
+    build:
+      context: ./app
+      args:
+        DEVTOOLS: ${DEVTOOLS}
     command: ["python3", "worker.py"]
     depends_on:
       - mysql
@@ -34,7 +37,10 @@ services:
   api:
     restart: always
     image: faceanalysis_app:${BUILD_TAG}
-    build: ./app
+    build:
+      context: ./app
+      args:
+        DEVTOOLS: ${DEVTOOLS}
     depends_on:
       - worker
       - mysql

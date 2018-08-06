@@ -10,7 +10,9 @@ cleanup() { rm -rf "${data_dir}" "${db_dir}"; }
 trap cleanup EXIT
 
 docker-compose down
-docker-compose build --build-arg DEVTOOLS=true
+
+DEVTOOLS=true \
+docker-compose build
 
 docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/faceanalysis
 docker-compose run --rm --no-deps --entrypoint=python3 api -m flake8 /app/faceanalysis
