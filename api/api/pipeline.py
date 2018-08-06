@@ -1,3 +1,5 @@
+# pylint: disable=too-few-public-methods
+
 import os
 import base64
 import numpy as np
@@ -25,6 +27,7 @@ class Pipeline:
         session.add(row)
         return row
 
+    # pylint: disable=broad-except
     def _process_img(self, img_id, session):
         self.logger.debug('processing img')
         img_has_been_uploaded = False
@@ -36,7 +39,7 @@ class Pipeline:
                 img = fr.load_image_file(fpath)
                 img_has_been_uploaded = True
                 break
-            except:
+            except Exception:
                 continue
         if img_has_been_uploaded:
             self._add_entry_to_session(Image,
@@ -44,6 +47,7 @@ class Pipeline:
                                        img_id=img_id)
         return img
 
+    # pylint: disable=broad-except
     def _delete_img(self, img_id):
         self.logger.debug('deleting img')
         for extension in self.allowed_file_extensions:
@@ -51,8 +55,8 @@ class Pipeline:
             fpath = os.path.join(self.img_dir, img_name)
             try:
                 os.remove(fpath)
-                self.logger.debug("removed {}".format(img_id))
-            except:
+                self.logger.debug("removed %s", img_id)
+            except Exception:
                 continue
 
     def _process_feature_mapping(self, features, img_id, session):
@@ -91,7 +95,8 @@ class Pipeline:
             known_features.append(current_features)
         return img_ids, np.array(known_features)
 
-    def _prepare_matches(self, matches, that_img_id, distance_score):
+    @classmethod
+    def _prepare_matches(cls, matches, that_img_id, distance_score):
         match_exists = False
         for match in matches:
             if match["that_img_id"] == that_img_id:
@@ -122,9 +127,9 @@ class Pipeline:
         session.close()
         if img_status is not None:
             return img_status.status == ImageStatusEnum.on_queue.name
-        else:
-            return False
+        return False
 
+    # pylint: disable=too-many-locals
     def _handle_message_from_queue(self, message):
         self.logger.debug("handling message from queue")
         session = self.db.get_session()
@@ -139,7 +144,7 @@ class Pipeline:
             prev_img_ids, prev_features = self._get_img_ids_and_features()
             curr_matches = []
             face_locations = fr.face_locations(curr_img)
-            if not len(face_locations):
+            if not face_locations:
                 error_msg = "No faces found in image"
                 self._update_img_status(curr_img_id, error_msg=error_msg)
             for face_location in face_locations:
@@ -147,7 +152,7 @@ class Pipeline:
                 curr_cropped_img = curr_img[top:bottom, left:right]
                 curr_cropped_features = fr.face_encodings(
                     curr_cropped_img)
-                if len(curr_cropped_features):
+                if curr_cropped_features:
                     self._process_feature_mapping(curr_cropped_features[0],
                                                   curr_img_id,
                                                   session)
@@ -179,3 +184,5 @@ class Pipeline:
         for message in qp.poll():
             self._handle_message_from_queue(message)
             self.logger.debug("polling next iteration")
+
+# pylint: enable=too-few-public-methods

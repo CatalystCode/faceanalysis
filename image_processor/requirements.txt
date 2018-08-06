@@ -1,9 +1,0 @@
-azure-storage-queue==0.37.0
-face-recognition==1.0.0
-Flask==0.12.2
-Flask-HTTPAuth==3.2.3
-mysql-connector-python==8.0.5
-numpy==1.14.0
-passlib==1.7.1
-Pillow==5.0.0
-SQLAlchemy==1.2.0

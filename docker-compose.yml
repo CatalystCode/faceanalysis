@@ -4,6 +4,7 @@ services:
 
   nginx:
     restart: always
+    image: faceanalysis_nginx:${BUILD_TAG}
     build: ./nginx
     logging:
       driver: "json-file"
@@ -13,9 +14,11 @@ services:
     ports:
       - "${APP_PORT}:80"
 
-  image_processor:
+  worker:
     restart: always
-    build: ./image_processor
+    image: faceanalysis_app:${BUILD_TAG}
+    build: ./api
+    command: ["python3", "worker.py"]
     depends_on:
       - mysql
     logging:
@@ -24,23 +27,22 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
-      - "${DATA_DIR}:/app/image_processor/images"
+      - "${DATA_DIR}:/app/api/images"
     env_file:
       - ./environment_variables.env
 
   api:
     restart: always
+    image: faceanalysis_app:${BUILD_TAG}
     build: ./api
     depends_on:
-      - image_processor
+      - worker
       - mysql
     logging:
       driver: "json-file"
       options:
         max-size: "50m"
         max-file: "5"
-    ports:
-      - "5000:5000"
     volumes:
       - "${DATA_DIR}:/app/api/images"
     env_file:
@@ -48,6 +50,7 @@ services:
 
   mysql:
     restart: always
+    image: faceanalysis_mysql:${BUILD_TAG}
     build: ./mysql
     logging:
       driver: "json-file"
