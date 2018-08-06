@@ -5,18 +5,18 @@ from base64 import b64encode
 from io import BytesIO
 from time import sleep
 from requests import codes
-from .. import api
-from ..models.database_manager import DatabaseManager
-from ..models.image_status_enum import ImageStatusEnum
-from ..models.models import init_models, delete_models
+from api.api import app
+from api.models.database_manager import DatabaseManager
+from api.models.image_status_enum import ImageStatusEnum
+from api.models.models import init_models, delete_models
 
 
 class ApiTestCase(unittest.TestCase):
     BASE_PATH = '/api/v1'
 
     def setUp(self):
-        api.app.testing = True
-        self.app = api.app.test_client()
+        app.testing = True
+        self.app = app.test_client()
         self.db = DatabaseManager()
         init_models(self.db.engine)
         username = 'username'
