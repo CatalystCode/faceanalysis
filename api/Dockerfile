@@ -5,7 +5,8 @@ COPY . /app
 
 RUN apt-get -y update \
     && apt-get install -y mysql-client \
-    && apt-get clean && rm -rf /tmp/* /var/tmp/* \ 
+    && apt-get clean \
+    && rm -rf /tmp/* /var/tmp/* \
     && pip install -r requirements.txt
 
 #RUN pip install mysql-connector-python \
