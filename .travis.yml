@@ -1,0 +1,7 @@
+language: generic
+
+services:
+  - docker
+
+script:
+  - ./run-test.sh
