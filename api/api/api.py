@@ -1,7 +1,7 @@
 import os
 import werkzeug
 from werkzeug.utils import secure_filename
-from requests import codes
+from http import HTTPStatus
 from azure.storage.queue import QueueService
 from flask_restful import Resource, Api, reqparse
 from flask import Flask, g
@@ -49,13 +49,13 @@ class RegisterUser(Resource):
         query = session.query(User).filter(User.username == username).first()
         session.close()
         if query is not None:
-            return 'User already registered', codes.BAD_REQUEST
+            return 'User already registered', HTTPStatus.BAD_REQUEST.value
         user = User(username=username)
         user.hash_password(password)
         session = db.get_session()
         session.add(user)
         db.safe_commit(session)
-        return {'username': username}, codes.CREATED
+        return {'username': username}, HTTPStatus.CREATED.value
 
 
 class ProcessImg(Resource):
@@ -75,23 +75,23 @@ class ProcessImg(Resource):
         if img_status is not None:
             if img_status.status != ImageStatusEnum.uploaded.name:
                 session.close()
-                return 'Image previously placed on queue', codes.BAD_REQUEST
+                return 'Image previously placed on queue', HTTPStatus.BAD_REQUEST.value
             try:
                 queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
                                           img_id)
                 img_status.status = ImageStatusEnum.on_queue.name
                 db.safe_commit(session)
                 logger.info('img successfully put on queue')
-                return 'OK', codes.OK
+                return 'OK', HTTPStatus.OK.value
             except:
                 error_msg = "img_id could not be added to queue"
                 img_status.status = ImageStatusEnum.uploaded.name
                 img_status.error_msg = error_msg
                 db.safe_commit(session)
-                return error_msg, codes.INTERNAL_SERVER_ERROR
+                return error_msg, HTTPStatus.INTERNAL_SERVER_ERROR.value
         else:
             session.close()
-            return 'Image not yet uploaded', codes.BAD_REQUEST
+            return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
 
     def get(self, img_id):
         logger.debug('checking if img has been processed')
@@ -103,7 +103,7 @@ class ProcessImg(Resource):
             return {'status': img_status.status,
                     'error_msg': img_status.error_msg}
         else:
-            return 'Image not yet uploaded', codes.BAD_REQUEST
+            return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
 
 
 class ImgUpload(Resource):
@@ -131,7 +131,7 @@ class ImgUpload(Resource):
             session.close()
             if prev_img_upload is not None:
                 error_msg = "Image upload failed: image previously uploaded"
-                return error_msg, codes.BAD_REQUEST
+                return error_msg, HTTPStatus.BAD_REQUEST.value
             try:
                 img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 img_status = ImageStatus(img_id=img_id,
@@ -141,13 +141,13 @@ class ImgUpload(Resource):
                 session.add(img_status)
                 db.safe_commit(session)
                 logger.info('img successfully uploaded')
-                return 'OK', codes.OK
+                return 'OK', HTTPStatus.OK.value
             except:
-                return 'Server error', codes.INTERNAL_SERVER_ERROR
+                return 'Server error', HTTPStatus.INTERNAL_SERVER_ERROR.value
         else:
             error_msg = '''Image upload failed: please use one of the following 
 extensions --> {}'''.format(self.allowed_extensions)
-            return error_msg, codes.BAD_REQUEST
+            return error_msg, HTTPStatus.BAD_REQUEST.value
 
     def _allowed_file(self, filename):
         return ('.' in filename and

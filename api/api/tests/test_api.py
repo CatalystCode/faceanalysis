@@ -4,7 +4,7 @@ import unittest
 from base64 import b64encode
 from io import BytesIO
 from time import sleep
-from requests import codes
+from http import HTTPStatus
 from api.api import app
 from api.models.database_manager import DatabaseManager
 from api.models.image_status_enum import ImageStatusEnum
@@ -32,7 +32,7 @@ class ApiTestCase(unittest.TestCase):
     def _register_default_user(self,
                                username,
                                password,
-                               expected_status_code=codes.CREATED):
+                               expected_status_code=HTTPStatus.CREATED.value):
         data = {'username': username,
                 'password': password}
         response = self.app.post(self.BASE_PATH + '/register_user', data=data)
@@ -44,10 +44,10 @@ class ApiTestCase(unittest.TestCase):
         headers = self._get_basic_auth_headers(username, password)
         response = self.app.get(self.BASE_PATH + '/token',
                                 headers=headers)
-        self.assertEqual(response.status_code, codes.OK)
+        self.assertEqual(response.status_code, HTTPStatus.OK.value)
         return response
 
-    def _upload_img(self, fname, expected_status_code=codes.OK):
+    def _upload_img(self, fname, expected_status_code=HTTPStatus.OK.value):
         img_path = self._get_img_path(fname)
         img = self._get_img(img_path, fname)
         data = {'image': img}
@@ -58,7 +58,7 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
-    def _process_img(self, img_id, expected_status_code=codes.OK):
+    def _process_img(self, img_id, expected_status_code=HTTPStatus.OK.value):
         data = {'img_id': img_id}
         response = self.app.post(self.BASE_PATH + '/process_image',
                                  data=data,
@@ -66,13 +66,13 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
-    def _get_imgs(self, expected_status_code=codes.OK):
+    def _get_imgs(self, expected_status_code=HTTPStatus.OK.value):
         response = self.app.get(self.BASE_PATH + '/images/',
                                 headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
-    def _get_matches(self, img_id, expected_status_code=codes.OK):
+    def _get_matches(self, img_id, expected_status_code=HTTPStatus.OK.value):
         response = self.app.get(self.BASE_PATH + '/image_matches/' + img_id,
                                 headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
@@ -80,13 +80,13 @@ class ApiTestCase(unittest.TestCase):
 
     def _wait_for_img_to_finish_processing(self,
                                            img_id,
-                                           expected_status_code=codes.OK):
+                                           expected_status_code=HTTPStatus.OK.value):
         while True:
             rel_path = '/process_image/'
             response = self.app.get(self.BASE_PATH + rel_path + img_id,
                                     headers=self.headers)
             self.assertEqual(response.status_code, expected_status_code)
-            if (expected_status_code == codes.BAD_REQUEST):
+            if (expected_status_code == HTTPStatus.BAD_REQUEST.value):
                 return response
             data = json.loads(response.get_data(as_text=True))
             if data['status'] == ImageStatusEnum.finished_processing.name:
@@ -141,12 +141,12 @@ class ApiTestCase(unittest.TestCase):
     def test_processing_img_that_has_not_yet_been_uploaded(self):
         img_id_not_yet_uploaded = '100'
         self._process_img(img_id_not_yet_uploaded,
-                          expected_status_code=codes.BAD_REQUEST)
+                          expected_status_code=HTTPStatus.BAD_REQUEST.value)
 
     def test_upload_twice(self):
         fname = '4.jpg'
         self._upload_img(fname)
-        self._upload_img(fname, expected_status_code=codes.BAD_REQUEST)
+        self._upload_img(fname, expected_status_code=HTTPStatus.BAD_REQUEST.value)
 
     def test_upload_and_process_twice(self):
         fname = '5.jpg'
@@ -156,7 +156,7 @@ class ApiTestCase(unittest.TestCase):
         for c, fname in enumerate([fname, fname]):
             if c == 1:
                 self._process_img(img_id,
-                                  expected_status_code=codes.BAD_REQUEST)
+                                  expected_status_code=HTTPStatus.BAD_REQUEST.value)
             else:
                 self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
@@ -181,7 +181,7 @@ class ApiTestCase(unittest.TestCase):
 
     def test_upload_file_not_allowed(self):
         fname = '0.txt'
-        self._upload_img(fname, codes.BAD_REQUEST)
+        self._upload_img(fname, HTTPStatus.BAD_REQUEST.value)
 
     def test_upload_arbitrarily_large_file(self):
         pass
