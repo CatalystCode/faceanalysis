@@ -52,5 +52,5 @@ COPY . /app
 #    passlib \
 #    Flask-HTTPAuth \
 #    requests
-EXPOSE 5000
-ENTRYPOINT ["/bin/bash", "/app/run.sh"]
+ENTRYPOINT ["./wait-for-dependencies.sh"]
+CMD ["python", "main.py"]

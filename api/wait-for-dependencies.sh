@@ -1,5 +1,7 @@
-#!usr/bin/env bash
+#!/usr/bin/env bash
+
 while ! mysqladmin ping -h"$MYSQL_CONTAINER_NAME" --silent; do
-    sleep 1
+  sleep 1
 done
-python main.py
+
+exec "$@"

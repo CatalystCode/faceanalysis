@@ -21,4 +21,5 @@ COPY . /app
 #    passlib \
 #    Flask-HTTPAuth
 EXPOSE 5000
-ENTRYPOINT ["/bin/bash", "/app/run.sh"]
+ENTRYPOINT ["./wait-for-dependencies.sh"]
+CMD ["gunicorn", "--bind=0.0.0.0:5000", "wsgi"]
