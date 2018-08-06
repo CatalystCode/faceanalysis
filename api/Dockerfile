@@ -1,13 +1,16 @@
 FROM python:3.4-slim
 
-WORKDIR /app
-COPY . /app
-
 RUN apt-get -y update \
     && apt-get install -y mysql-client \
     && apt-get clean \
-    && rm -rf /tmp/* /var/tmp/* \
-    && pip install --no-cache-dir -r requirements.txt
+    && rm -rf /tmp/* /var/tmp/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . /app
 
 #RUN pip install mysql-connector-python \
 #    flask \

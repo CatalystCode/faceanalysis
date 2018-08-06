@@ -35,9 +35,12 @@ RUN apt-get -y update \
     && python3 setup.py install --yes USE_AVX_INSTRUCTIONS
 
 WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . /app
 
-RUN pip install --no-cache-dir -r requirements.txt
 #RUN pip install mysql-connector-python \
 #    sqlalchemy \
 #    Pillow \
