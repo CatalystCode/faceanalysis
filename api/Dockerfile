@@ -1,7 +1,8 @@
 FROM python:3.4-slim
 
 RUN apt-get -y update \
-    && apt-get install -y mysql-client \
+    && apt-get install -y \
+        mysql-client \
     && apt-get clean \
     && rm -rf /tmp/* /var/tmp/*
 
