@@ -4,6 +4,5 @@ Flask-HTTPAuth==3.2.3
 Flask-RESTful==0.3.6
 gunicorn==19.7.1
 mysql-connector-python==8.0.5
-nose2==0.7.3
 passlib==1.7.1
 SQLAlchemy==1.2.0
