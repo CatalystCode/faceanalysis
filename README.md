@@ -1,3 +1,5 @@
+[![Travis CI status](https://api.travis-ci.org/c-w/faceanalysis.svg?branch=master)](https://travis-ci.org/c-w/faceanalysis)
+
 # Demo Instructions
 1. Create an Azure VM (preferably Ubuntu 16.04)
 2. Install Docker and Docker Compose
