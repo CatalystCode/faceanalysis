@@ -2,7 +2,6 @@
 
 set -e
 
-app_port="8080"
 data_dir="$(mktemp -d)"
 db_dir="$(mktemp -d)"
 
@@ -11,13 +10,13 @@ trap cleanup EXIT
 
 docker-compose down
 
-DEVTOOLS=true \
+DEVTOOLS="true" \
 docker-compose build
 
 docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/faceanalysis
 docker-compose run --rm --no-deps --entrypoint=python3 api -m flake8 /app/faceanalysis
 
-APP_PORT="${app_port}" \
+APP_PORT="8080" \
 DATA_DIR="${data_dir}" \
 DB_DIR="${db_dir}" \
 docker-compose run --rm api nose2
