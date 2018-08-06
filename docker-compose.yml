@@ -2,7 +2,7 @@ version: '3'
 services:
   nginx:
     restart: always
-    image: nginx:1.7.8
+    build: ./nginx
     depends_on:
       - api
     logging:
@@ -12,8 +12,6 @@ services:
         max-file: "5"
     ports:
       - "80:80"
-    volumes:
-      - "./nginx/conf.d/api.conf:/etc/nginx/conf.d/api.conf"
   image_processor:
     restart: always
     build: ./image_processor
