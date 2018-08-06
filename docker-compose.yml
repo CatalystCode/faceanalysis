@@ -23,7 +23,7 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
-      - "./persisted_data/prod/images:/app/image_processor/images"
+      - "${DATA_DIR}:/app/image_processor/images"
     env_file:
       - ./environment_variables.env
   api:
@@ -40,7 +40,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - "./persisted_data/prod/images:/app/api/images"
+      - "${DATA_DIR}:/app/api/images"
     env_file:
       - ./environment_variables.env
   mysql:
@@ -52,6 +52,6 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
-      - "./persisted_data/prod/database:/var/lib/mysql"
+      - "${DB_DIR}:/var/lib/mysql"
     env_file:
       - ./environment_variables.env
