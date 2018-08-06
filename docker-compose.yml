@@ -5,8 +5,6 @@ services:
   nginx:
     restart: always
     build: ./nginx
-    depends_on:
-      - api
     logging:
       driver: "json-file"
       options:
