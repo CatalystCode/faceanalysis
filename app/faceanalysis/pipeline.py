@@ -10,6 +10,8 @@ from .models.models import Image, FeatureMapping, Match, ImageStatus
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
 
+DISTANCE_SCORE_THRESHOLD = 0.6
+
 
 class Pipeline:
     def __init__(self):
@@ -158,18 +160,19 @@ class Pipeline:
                     face_vector, curr_img_id, session)
                 face_distances = self._compute_distances(
                     prev_features, face_vector)
-                for count, distance_score in enumerate(face_distances):
+                for i, distance_score in enumerate(face_distances):
+                    that_img_id = prev_img_ids[i]
+                    if curr_img_id == that_img_id:
+                        continue
                     distance_score = float(distance_score)
-                    that_img_id = prev_img_ids[count]
-                    if distance_score < 0.6 and curr_img_id != that_img_id:
-                        self._prepare_matches(curr_matches,
-                                              that_img_id,
-                                              distance_score)
+                    if distance_score >= DISTANCE_SCORE_THRESHOLD:
+                        continue
+                    self._prepare_matches(
+                        curr_matches, that_img_id, distance_score)
             for curr_match in curr_matches:
-                self._process_matches(curr_img_id,
-                                      curr_match["that_img_id"],
-                                      curr_match["distance_score"],
-                                      session)
+                self._process_matches(
+                    curr_img_id, curr_match["that_img_id"],
+                    curr_match["distance_score"], session)
         else:
             error_msg = "Image processed before uploaded"
             self._update_img_status(curr_img_id, error_msg=error_msg)
