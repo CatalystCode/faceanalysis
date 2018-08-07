@@ -9,24 +9,16 @@ from .models.database_manager import get_database_manager
 from .models.models import Image, FeatureMapping, Match, ImageStatus
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
-
-DISTANCE_SCORE_THRESHOLD = float(os.environ.get(
-    'DISTANCE_SCORE_THRESHOLD',
-    '0.6'))
-
-FACE_VECTORIZE_ALGORITHM = os.environ.get(
-    'FACE_VECTORIZE_ALGORITHM',
-    'cwolff/face_recognition')
+from .settings import (IMAGE_PROCESSOR_QUEUE, ALLOWED_EXTENSIONS,
+                       DISTANCE_SCORE_THRESHOLD, FACE_VECTORIZE_ALGORITHM)
 
 
 class Pipeline:
     def __init__(self):
         self.db = get_database_manager()
-        self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
+        self.logger = get_logger(__name__)
         dirname = os.path.dirname(os.path.abspath(__file__))
         self.img_dir = os.path.join(dirname, 'images')
-        file_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS'].lower()
-        self.allowed_file_extensions = file_extensions.split('_')
         self.logger.debug('pipeline initialized')
 
     def _add_entry_to_session(self, cls, session, **kwargs):
@@ -39,7 +31,7 @@ class Pipeline:
         self.logger.debug('finding image %s', img_id)
 
         img_path = None
-        for extension in self.allowed_file_extensions:
+        for extension in ALLOWED_EXTENSIONS:
             img_name = "{}.{}".format(img_id, extension)
             fpath = os.path.join(self.img_dir, img_name)
             if os.path.isfile(fpath):
@@ -56,7 +48,7 @@ class Pipeline:
     # pylint: disable=broad-except
     def _delete_img(self, img_id):
         self.logger.debug('deleting img')
-        for extension in self.allowed_file_extensions:
+        for extension in ALLOWED_EXTENSIONS:
             img_name = "{}.{}".format(img_id, extension)
             fpath = os.path.join(self.img_dir, img_name)
             try:
@@ -191,7 +183,7 @@ class Pipeline:
 
     def begin_pipeline(self):
         self.logger.debug('pipeline began')
-        qp = QueuePoll(os.environ['IMAGE_PROCESSOR_QUEUE'])
+        qp = QueuePoll(IMAGE_PROCESSOR_QUEUE)
         for message in qp.poll():
             self._handle_message_from_queue(message)
             self.logger.debug("polling next iteration")

@@ -1,20 +1,19 @@
 # pylint: disable=too-few-public-methods
 
-import os
 from time import sleep
 from azure.storage.queue import QueueService
 from .log import get_logger
+from .settings import STORAGE_ACCOUNT_KEY, STORAGE_ACCOUNT_NAME
 
 
 class QueuePoll:
     def __init__(self, queue_name):
-        env_acc_name = os.environ['STORAGE_ACCOUNT_NAME']
-        env_acc_key = os.environ['STORAGE_ACCOUNT_KEY']
-        self.queue_service = QueueService(account_name=env_acc_name,
-                                          account_key=env_acc_key)
+        self.queue_service = QueueService(
+            account_name=STORAGE_ACCOUNT_NAME,
+            account_key=STORAGE_ACCOUNT_KEY)
         self.queue_name = queue_name
         self.queue_service.create_queue(self.queue_name)
-        self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
+        self.logger = get_logger(__name__)
 
     # pylint: disable=broad-except
     def _get_messages_from_queue(self):

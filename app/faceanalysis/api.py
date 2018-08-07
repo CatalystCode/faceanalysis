@@ -12,6 +12,8 @@ from .models.database_manager import get_database_manager
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
 from .auth import auth
+from .settings import (STORAGE_ACCOUNT_NAME, STORAGE_ACCOUNT_KEY,
+                       IMAGE_PROCESSOR_QUEUE, ALLOWED_EXTENSIONS)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(
@@ -20,10 +22,10 @@ app.config['UPLOAD_FOLDER'] = os.path.join(
     'images')
 app.url_map.strict_slashes = False
 api = Api(app)
-queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
-                             account_key=os.environ['STORAGE_ACCOUNT_KEY'])
-queue_service.create_queue(os.environ['IMAGE_PROCESSOR_QUEUE'])
-logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
+queue_service = QueueService(account_name=STORAGE_ACCOUNT_NAME,
+                             account_key=STORAGE_ACCOUNT_KEY)
+queue_service.create_queue(IMAGE_PROCESSOR_QUEUE)
+logger = get_logger(__name__)
 
 
 class AuthenticationToken(Resource):
@@ -81,8 +83,7 @@ class ProcessImg(Resource):
                 return ('Image previously placed on queue',
                         HTTPStatus.BAD_REQUEST.value)
             try:
-                queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
-                                          img_id)
+                queue_service.put_message(IMAGE_PROCESSOR_QUEUE, img_id)
                 img_status.status = ImageStatusEnum.on_queue.name
                 db.safe_commit(session)
                 logger.info('img successfully put on queue')
@@ -112,8 +113,6 @@ class ProcessImg(Resource):
 
 class ImgUpload(Resource):
     method_decorators = [auth.login_required]
-    env_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS']
-    allowed_extensions = env_extensions.lower().split('_')
 
     # pylint: disable=broad-except
     def post(self):
@@ -152,12 +151,12 @@ class ImgUpload(Resource):
         else:
             error_msg = ('Image upload failed: please use one of the '
                          'following extensions --> {}'
-                         .format(self.allowed_extensions))
+                         .format(ALLOWED_EXTENSIONS))
             return error_msg, HTTPStatus.BAD_REQUEST.value
 
     def _allowed_file(self, filename):
         return ('.' in filename and
-                filename.rsplit('.', 1)[1].lower() in self.allowed_extensions)
+                filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS)
 
 
 class ImgMatchList(Resource):

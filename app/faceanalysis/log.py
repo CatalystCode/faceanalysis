@@ -1,8 +1,9 @@
 import sys
 import logging
+from .settings import LOGGING_LEVEL
 
 
-def get_logger(module_name, logging_level):
+def get_logger(module_name, logging_level=LOGGING_LEVEL):
     logging_levels = {
         'DEBUG': logging.DEBUG,
         'INFO': logging.INFO,

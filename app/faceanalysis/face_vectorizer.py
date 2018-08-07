@@ -2,11 +2,10 @@ import os
 import json
 import docker
 from .log import get_logger
+from .settings import MOUNTED_DATA_DIR
+from .settings import HOST_DATA_DIR
 
-logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
-
-mounted_data_dir = os.environ['MOUNTED_DATA_DIR']
-host_data_dir = os.environ['HOST_DATA_DIR']
+logger = get_logger(__name__)
 
 
 def _format_mount_path(img_path):
@@ -20,8 +19,8 @@ def _format_host_path(img_path):
 
     # adjust the path if it itself is a mount and if we're spawning a
     # sibling container
-    if mounted_data_dir and host_data_dir:
-        img_path = img_path.replace(mounted_data_dir, host_data_dir)
+    if MOUNTED_DATA_DIR and HOST_DATA_DIR:
+        img_path = img_path.replace(MOUNTED_DATA_DIR, HOST_DATA_DIR)
 
     return img_path
 
@@ -31,6 +30,7 @@ def get_face_vectors(img_path, algorithm):
     img_host = _format_host_path(img_path)
     volumes = {img_host: {'bind': img_mount, 'mode': 'ro'}}
 
+    logger.debug('Running container %s with image %s', algorithm, img_host)
     client = docker.from_env()
     stdout = client.containers.run(algorithm, img_mount,
                                    volumes=volumes, auto_remove=True)

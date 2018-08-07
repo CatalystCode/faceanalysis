@@ -9,6 +9,7 @@ from faceanalysis.api import app
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import init_models, delete_models
+from faceanalysis.settings import ALLOWED_EXTENSIONS
 
 
 class ApiTestCase(unittest.TestCase):
@@ -164,10 +165,8 @@ class ApiTestCase(unittest.TestCase):
 
     def test_end_to_end_with_different_file_formats(self):
         # test jpg && png
-        file_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS'].lower()
-        allowed_file_extensions = file_extensions.split('_')
-        self.assertIn('jpg', allowed_file_extensions)
-        self.assertIn('png', allowed_file_extensions)
+        self.assertIn('jpg', ALLOWED_EXTENSIONS)
+        self.assertIn('png', ALLOWED_EXTENSIONS)
         fnames = {'11.jpg', '12.png'}
         self._test_end_to_end_with_matching_imgs(fnames)
 
