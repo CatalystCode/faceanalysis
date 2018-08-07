@@ -30,8 +30,7 @@ class DatabaseManager:
                                                          mysql_port,
                                                          mysql_database)
         self.engine = create_engine(engine_credential,
-                                    pool_recycle=3600,
-                                    echo=True)
+                                    pool_recycle=3600)
 
         self.session_factory = sessionmaker(bind=self.engine)
         self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
