@@ -8,7 +8,7 @@ from azure.storage.queue import QueueService
 from flask_restful import Resource, Api, reqparse
 from flask import Flask, g
 from .models.models import Match, Image, User, ImageStatus
-from .models.database_manager import DatabaseManager
+from .models.database_manager import get_database_manager
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
 from .auth import auth
@@ -46,7 +46,7 @@ class RegisterUser(Resource):
         args = parser.parse_args()
         username = args['username']
         password = args['password']
-        db = DatabaseManager()
+        db = get_database_manager()
         session = db.get_session()
         query = session.query(User).filter(User.username == username).first()
         session.close()
@@ -71,7 +71,7 @@ class ProcessImg(Resource):
                             help="img_id missing in the post body")
         args = parser.parse_args()
         img_id = args['img_id']
-        db = DatabaseManager()
+        db = get_database_manager()
         session = db.get_session()
         img_status = session.query(ImageStatus).filter(
             ImageStatus.img_id == img_id).first()
@@ -99,7 +99,8 @@ class ProcessImg(Resource):
 
     def get(self, img_id):
         logger.debug('checking if img has been processed')
-        session = DatabaseManager().get_session()
+        db = get_database_manager()
+        session = db.get_session()
         img_status = session.query(ImageStatus).filter(
             ImageStatus.img_id == img_id).first()
         session.close()
@@ -125,7 +126,7 @@ class ImgUpload(Resource):
                             location='files')
         args = parser.parse_args()
         img = args['image']
-        db = DatabaseManager()
+        db = get_database_manager()
         if self._allowed_file(img.filename):
             filename = secure_filename(img.filename)
             img_id = filename[:filename.find('.')]
@@ -165,7 +166,8 @@ class ImgMatchList(Resource):
     # pylint: disable=assignment-from-no-return
     def get(self, img_id):
         logger.debug('getting img match list')
-        session = DatabaseManager().get_session()
+        db = get_database_manager()
+        session = db.get_session()
         query = session.query(Match).filter(Match.this_img_id == img_id)
         imgs = []
         distances = []
@@ -182,7 +184,8 @@ class ImgList(Resource):
 
     def get(self):
         logger.debug('getting img list')
-        session = DatabaseManager().get_session()
+        db = get_database_manager()
+        session = db.get_session()
         query = session.query(Image).all()
         imgs = [f.img_id for f in query]
         session.close()

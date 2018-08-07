@@ -9,7 +9,7 @@ from sqlalchemy import (Column, String, Float, Text,
                         Integer, DateTime, UniqueConstraint)
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
-from .database_manager import DatabaseManager
+from .database_manager import get_database_manager
 
 Base = declarative_base()
 
@@ -43,7 +43,8 @@ class User(Base):
             return None
         except BadSignature:
             return None
-        session = DatabaseManager().get_session()
+        db = get_database_manager()
+        session = db.get_session()
         user = session.query(User).filter(User.id == data['id']).first()
         session.close()
         return user

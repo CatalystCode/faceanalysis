@@ -1,20 +1,10 @@
+from functools import lru_cache
 import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from ..log import get_logger
 
 
-def singleton(class_):
-    instances = {}
-
-    def getinstance(*args, **kwargs):
-        if class_ not in instances:
-            instances[class_] = class_(*args, **kwargs)
-        return instances[class_]
-    return getinstance
-
-
-@singleton
 class DatabaseManager:
     def __init__(self):
         mysql_user = os.environ['MYSQL_USER']
@@ -53,3 +43,8 @@ class DatabaseManager:
     def close_engine(self):
         self.logger.debug("engine closed")
         self.engine.dispose()
+
+
+@lru_cache(maxsize=1)
+def get_database_manager():
+    return DatabaseManager()

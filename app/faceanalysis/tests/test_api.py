@@ -6,7 +6,7 @@ from io import BytesIO
 from time import sleep
 from http import HTTPStatus
 from faceanalysis.api import app
-from faceanalysis.models.database_manager import DatabaseManager
+from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import init_models, delete_models
 
@@ -17,7 +17,7 @@ class ApiTestCase(unittest.TestCase):
     def setUp(self):
         app.testing = True
         self.app = app.test_client()
-        self.db = DatabaseManager()
+        self.db = get_database_manager()
         init_models(self.db.engine)
         username = 'username'
         password = 'password'

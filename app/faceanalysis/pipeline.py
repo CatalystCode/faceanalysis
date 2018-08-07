@@ -5,7 +5,7 @@ import base64
 import numpy as np
 import face_recognition as fr
 from .queue_poll import QueuePoll
-from .models.database_manager import DatabaseManager
+from .models.database_manager import get_database_manager
 from .models.models import Image, FeatureMapping, Match, ImageStatus
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
@@ -13,7 +13,7 @@ from .log import get_logger
 
 class Pipeline:
     def __init__(self):
-        self.db = DatabaseManager()
+        self.db = get_database_manager()
         self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
         dirname = os.path.dirname(os.path.abspath(__file__))
         self.img_dir = os.path.join(dirname, 'images')
