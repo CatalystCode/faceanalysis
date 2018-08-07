@@ -31,7 +31,6 @@ def get_face_vectors(img_path, algorithm):
     img_host = _format_host_path(img_path)
     volumes = {img_host: {'bind': img_mount, 'mode': 'ro'}}
 
-    logger.debug('Running container %s with image %s', algorithm, img_host)
     client = docker.from_env()
     stdout = client.containers.run(algorithm, img_mount,
                                    volumes=volumes, auto_remove=True)
