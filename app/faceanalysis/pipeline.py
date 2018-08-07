@@ -1,7 +1,7 @@
 # pylint: disable=too-few-public-methods
 
 import os
-import base64
+import json
 import numpy as np
 from .face_vectorizer import get_face_vectors
 from .queue_poll import QueuePoll
@@ -10,7 +10,13 @@ from .models.models import Image, FeatureMapping, Match, ImageStatus
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
 
-DISTANCE_SCORE_THRESHOLD = 0.6
+DISTANCE_SCORE_THRESHOLD = float(os.environ.get(
+    'DISTANCE_SCORE_THRESHOLD',
+    '0.6'))
+
+FACE_VECTORIZE_ALGORITHM = os.environ.get(
+    'FACE_VECTORIZE_ALGORITHM',
+    'cwolff/face_recognition')
 
 
 class Pipeline:
@@ -61,7 +67,7 @@ class Pipeline:
 
     def _process_feature_mapping(self, features, img_id, session):
         self.logger.debug('processing feature mapping')
-        feature_str = base64.b64encode(features.dumps())
+        feature_str = json.dumps(features)
         self._add_entry_to_session(FeatureMapping,
                                    session,
                                    img_id=img_id,
@@ -91,7 +97,7 @@ class Pipeline:
         img_ids = []
         for row in rows:
             img_ids.append(row.img_id)
-            current_features = np.loads(base64.b64decode(row.features))
+            current_features = np.array(json.loads(row.features))
             known_features.append(current_features)
         return img_ids, np.array(known_features)
 
@@ -135,6 +141,7 @@ class Pipeline:
         if len(face_encodings) == 0:
             return np.empty((0))
 
+        face_to_compare = np.array(face_to_compare)
         return np.linalg.norm(face_encodings - face_to_compare, axis=1)
 
     # pylint: disable=too-many-locals
@@ -151,7 +158,8 @@ class Pipeline:
         if curr_img_path is not None:
             prev_img_ids, prev_features = self._get_img_ids_and_features()
             curr_matches = []
-            face_vectors = get_face_vectors(curr_img_path)
+            face_vectors = get_face_vectors(
+                curr_img_path, FACE_VECTORIZE_ALGORITHM)
             if not face_vectors:
                 error_msg = "No faces found in image"
                 self._update_img_status(curr_img_id, error_msg=error_msg)

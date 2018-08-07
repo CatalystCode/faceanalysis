@@ -30,7 +30,11 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - "${DATA_DIR}:/app/faceanalysis/images"
+    environment:
+      HOST_DATA_DIR: "${DATA_DIR}"
+      MOUNTED_DATA_DIR: /app/faceanalysis/images
     env_file:
       - ./environment_variables.env
 
