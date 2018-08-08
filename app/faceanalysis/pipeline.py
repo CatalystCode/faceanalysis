@@ -1,8 +1,9 @@
-import json
 import os
 
 import numpy as np
 
+from faceanalysis.face_vectorizer import face_vector_from_text
+from faceanalysis.face_vectorizer import face_vector_to_text
 from faceanalysis.face_vectorizer import get_face_vectors
 from faceanalysis.log import get_logger
 from faceanalysis.models.database_manager import get_database_manager
@@ -63,9 +64,9 @@ def _delete_img(img_id):
 
 def _process_feature_mapping(features, img_id, session):
     logger.debug('processing feature mapping')
-    feature_str = json.dumps(features)
     _add_entry_to_session(FeatureMapping, session,
-                          img_id=img_id, features=feature_str)
+                          img_id=img_id,
+                          features=face_vector_to_text(features))
     return features
 
 
@@ -90,7 +91,7 @@ def _get_img_ids_and_features():
     img_ids = []
     for row in rows:
         img_ids.append(row.img_id)
-        current_features = np.array(json.loads(row.features))
+        current_features = np.array(face_vector_from_text(row.features))
         known_features.append(current_features)
     return img_ids, np.array(known_features)
 

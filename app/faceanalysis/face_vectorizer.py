@@ -39,3 +39,11 @@ def get_face_vectors(img_path, algorithm):
 
     face_vectors = json.loads(stdout.decode('ascii')).get('faceVectors', [])
     return face_vectors
+
+
+def face_vector_to_text(vector):
+    return json.dumps(vector)
+
+
+def face_vector_from_text(text):
+    return json.loads(text)
