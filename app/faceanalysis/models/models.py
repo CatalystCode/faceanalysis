@@ -1,7 +1,3 @@
-from itsdangerous import BadSignature
-from itsdangerous import SignatureExpired
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from passlib.apps import custom_app_context as pwd_context
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Float
@@ -14,10 +10,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.sql import func
 
-from faceanalysis.models.database_manager import get_database_manager
-from faceanalysis.settings import TOKEN_EXPIRATION
-from faceanalysis.settings import TOKEN_SECRET_KEY
-
 Base = declarative_base()
 
 
@@ -28,32 +20,6 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(32), unique=True, index=True)
     password_hash = Column(String(128))
-
-    def hash_password(self, password):
-        self.password_hash = pwd_context.encrypt(password)
-
-    def verify_password(self, password):
-        return pwd_context.verify(password, self.password_hash)
-
-    def generate_auth_token(self, expiration=None):
-        expiration = expiration or TOKEN_EXPIRATION
-        serializer = Serializer(TOKEN_SECRET_KEY, expires_in=expiration)
-        return serializer.dumps({'id': self.id})
-
-    @staticmethod
-    def verify_auth_token(token):
-        serializer = Serializer(TOKEN_SECRET_KEY)
-        try:
-            data = serializer.loads(token)
-        except SignatureExpired:
-            return None
-        except BadSignature:
-            return None
-        db = get_database_manager()
-        session = db.get_session()
-        user = session.query(User).filter(User.id == data['id']).first()
-        session.close()
-        return user
 
 
 class ImageStatus(Base):

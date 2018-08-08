@@ -67,8 +67,3 @@ def delete_image(img_id):
 def get_image_path(img_id):
     image = _get_image(img_id)
     return image.get_cdn_url()
-
-
-def can_be_stored(filename):
-    return ('.' in filename and
-            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS)
