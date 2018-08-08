@@ -5,15 +5,13 @@ set -e
 data_dir="$(mktemp -d)"
 db_dir="$(mktemp -d)"
 
-cleanup() {
-  set +e
-  rm -rf "${data_dir}" "${db_dir}"
-  docker-compose down
-}
+cleanup() { set +e; rm -rf "${data_dir}" "${db_dir}"; }
 trap cleanup EXIT
 
 DEVTOOLS="true" \
 docker-compose build
+
+docker-compose down
 
 docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/faceanalysis
 docker-compose run --rm --no-deps --entrypoint=python3 api -m flake8 /app/faceanalysis
