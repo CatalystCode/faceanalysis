@@ -1,9 +1,11 @@
-# pylint: disable=too-few-public-methods
-
 from time import sleep
+
+from azure.common import AzureException
 from azure.storage.queue import QueueService
-from .log import get_logger
-from .settings import STORAGE_ACCOUNT_KEY, STORAGE_ACCOUNT_NAME
+
+from faceanalysis.log import get_logger
+from faceanalysis.settings import STORAGE_ACCOUNT_KEY
+from faceanalysis.settings import STORAGE_ACCOUNT_NAME
 
 logger = get_logger(__name__)
 
@@ -17,19 +19,19 @@ def create_queue_service(queue_name):
     return queue_service
 
 
+# pylint: disable=too-few-public-methods
 class QueuePoll:
     def __init__(self, queue_name):
         self.queue_service = create_queue_service(queue_name)
         self.queue_name = queue_name
 
-    # pylint: disable=broad-except
     def _get_messages_from_queue(self):
         messages = []
         try:
             messages = self.queue_service.get_messages(self.queue_name)
             if messages:
                 logger.debug('Got %d messages from queue', len(messages))
-        except Exception:
+        except AzureException:
             logger.exception('Unable to fetch messages from queue')
         return messages
 
@@ -41,5 +43,4 @@ class QueuePoll:
                     self.queue_name, message.id, message.pop_receipt)
                 yield message
             sleep(3)
-
 # pylint: enable=too-few-public-methods
