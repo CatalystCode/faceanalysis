@@ -168,12 +168,11 @@ class ImgUpload(Resource):
 class ImgMatchList(Resource):
     method_decorators = [auth.login_required]
 
-    # pylint: disable=assignment-from-no-return
     def get(self, img_id):
         logger.debug('getting img match list')
         db = get_database_manager()
         session = db.get_session()
-        query = session.query(Match).filter(Match.this_img_id == img_id)
+        query = session.query(Match).filter(Match.this_img_id == img_id).all()
         imgs = []
         distances = []
         for match in query:
