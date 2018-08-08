@@ -1,9 +1,11 @@
-import os
 import json
+import os
+
 import docker
-from .log import get_logger
-from .settings import MOUNTED_DATA_DIR
-from .settings import HOST_DATA_DIR
+
+from faceanalysis.log import get_logger
+from faceanalysis.settings import HOST_DATA_DIR
+from faceanalysis.settings import MOUNTED_DATA_DIR
 
 logger = get_logger(__name__)
 

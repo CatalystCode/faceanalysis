@@ -2,17 +2,26 @@
 
 import os
 from http import HTTPStatus
-import werkzeug
+
+from flask import Flask
+from flask import g
+from flask_restful import Api
+from flask_restful import Resource
+from flask_restful import reqparse
+from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
-from flask_restful import Resource, Api, reqparse
-from flask import Flask, g
-from .models.models import Match, Image, User, ImageStatus
-from .models.database_manager import get_database_manager
-from .models.image_status_enum import ImageStatusEnum
-from .log import get_logger
-from .queue_poll import create_queue_service
-from .auth import auth
-from .settings import IMAGE_PROCESSOR_QUEUE, ALLOWED_EXTENSIONS
+
+from faceanalysis.auth import auth
+from faceanalysis.log import get_logger
+from faceanalysis.models.database_manager import get_database_manager
+from faceanalysis.models.image_status_enum import ImageStatusEnum
+from faceanalysis.models.models import Image
+from faceanalysis.models.models import ImageStatus
+from faceanalysis.models.models import Match
+from faceanalysis.models.models import User
+from faceanalysis.queue_poll import create_queue_service
+from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(
@@ -116,7 +125,7 @@ class ImgUpload(Resource):
         logger.debug('uploading img')
         parser = reqparse.RequestParser()
         parser.add_argument('image',
-                            type=werkzeug.datastructures.FileStorage,
+                            type=FileStorage,
                             required=True,
                             help="image missing in post body",
                             location='files')

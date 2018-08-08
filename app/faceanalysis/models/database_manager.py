@@ -1,9 +1,14 @@
 from functools import lru_cache
-from sqlalchemy.orm import sessionmaker
+
 from sqlalchemy import create_engine
-from ..log import get_logger
-from ..settings import (MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE,
-                        MYSQL_CONTAINER_NAME)
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
+
+from faceanalysis.log import get_logger
+from faceanalysis.settings import MYSQL_CONTAINER_NAME
+from faceanalysis.settings import MYSQL_DATABASE
+from faceanalysis.settings import MYSQL_PASSWORD
+from faceanalysis.settings import MYSQL_USER
 
 
 class DatabaseManager:
@@ -25,12 +30,11 @@ class DatabaseManager:
     def get_session(self):
         return self.session_factory()
 
-    # pylint: disable=broad-except
     def safe_commit(self, session):
         try:
             session.commit()
             self.logger.debug("session committed")
-        except Exception:
+        except SQLAlchemyError:
             session.rollback()
             self.logger.debug("session rolled back")
         finally:

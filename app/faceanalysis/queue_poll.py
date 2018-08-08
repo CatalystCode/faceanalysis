@@ -1,9 +1,12 @@
 # pylint: disable=too-few-public-methods
 
 from time import sleep
+
 from azure.storage.queue import QueueService
-from .log import get_logger
-from .settings import STORAGE_ACCOUNT_KEY, STORAGE_ACCOUNT_NAME
+
+from faceanalysis.log import get_logger
+from faceanalysis.settings import STORAGE_ACCOUNT_KEY
+from faceanalysis.settings import STORAGE_ACCOUNT_NAME
 
 logger = get_logger(__name__)
 

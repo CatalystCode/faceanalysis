@@ -1,7 +1,8 @@
-from flask_httpauth import HTTPBasicAuth
 from flask import g
-from .models.models import User
-from .models.database_manager import get_database_manager
+from flask_httpauth import HTTPBasicAuth
+
+from faceanalysis.models.database_manager import get_database_manager
+from faceanalysis.models.models import User
 
 auth = HTTPBasicAuth()
 

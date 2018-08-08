@@ -1,15 +1,23 @@
 # pylint: disable=too-few-public-methods
+from itsdangerous import BadSignature
+from itsdangerous import SignatureExpired
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from passlib.apps import custom_app_context as pwd_context
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from sqlalchemy.schema import ForeignKey
+from sqlalchemy import Column
+from sqlalchemy import DateTime
+from sqlalchemy import Float
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Text
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import (Column, String, Float, Text,
-                        Integer, DateTime, UniqueConstraint)
-from itsdangerous import (TimedJSONWebSignatureSerializer
-                          as Serializer, BadSignature, SignatureExpired)
-from .database_manager import get_database_manager
-from ..settings import TOKEN_EXPIRATION, TOKEN_SECRET_KEY
+from sqlalchemy.orm import relationship
+from sqlalchemy.schema import ForeignKey
+from sqlalchemy.sql import func
+
+from faceanalysis.models.database_manager import get_database_manager
+from faceanalysis.settings import TOKEN_EXPIRATION
+from faceanalysis.settings import TOKEN_SECRET_KEY
 
 Base = declarative_base()
 

@@ -1,16 +1,23 @@
 # pylint: disable=too-few-public-methods
 
-import os
 import json
+import os
+
 import numpy as np
-from .face_vectorizer import get_face_vectors
-from .queue_poll import QueuePoll
-from .models.database_manager import get_database_manager
-from .models.models import Image, FeatureMapping, Match, ImageStatus
-from .models.image_status_enum import ImageStatusEnum
-from .log import get_logger
-from .settings import (IMAGE_PROCESSOR_QUEUE, ALLOWED_EXTENSIONS,
-                       DISTANCE_SCORE_THRESHOLD, FACE_VECTORIZE_ALGORITHM)
+
+from faceanalysis.face_vectorizer import get_face_vectors
+from faceanalysis.log import get_logger
+from faceanalysis.models.database_manager import get_database_manager
+from faceanalysis.models.image_status_enum import ImageStatusEnum
+from faceanalysis.models.models import FeatureMapping
+from faceanalysis.models.models import Image
+from faceanalysis.models.models import ImageStatus
+from faceanalysis.models.models import Match
+from faceanalysis.queue_poll import QueuePoll
+from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import DISTANCE_SCORE_THRESHOLD
+from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
+from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
 
 
 class Pipeline:
