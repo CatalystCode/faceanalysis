@@ -2,6 +2,7 @@
 
 from time import sleep
 
+from azure.common import AzureException
 from azure.storage.queue import QueueService
 
 from faceanalysis.log import get_logger
@@ -25,14 +26,13 @@ class QueuePoll:
         self.queue_service = create_queue_service(queue_name)
         self.queue_name = queue_name
 
-    # pylint: disable=broad-except
     def _get_messages_from_queue(self):
         messages = []
         try:
             messages = self.queue_service.get_messages(self.queue_name)
             if messages:
                 logger.debug('Got %d messages from queue', len(messages))
-        except Exception:
+        except AzureException:
             logger.exception('Unable to fetch messages from queue')
         return messages
 

@@ -3,6 +3,7 @@ Flask-RESTful==0.3.6
 Flask==0.12.2
 SQLAlchemy==1.2.0
 Werkzeug==0.14.1
+azure-common==1.1.14
 azure-storage-queue==0.37.0
 docker==3.4.1
 gunicorn==19.7.1
