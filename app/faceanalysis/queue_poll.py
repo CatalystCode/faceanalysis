@@ -1,5 +1,3 @@
-# pylint: disable=too-few-public-methods
-
 from time import sleep
 
 from azure.common import AzureException
@@ -21,6 +19,7 @@ def create_queue_service(queue_name):
     return queue_service
 
 
+# pylint: disable=too-few-public-methods
 class QueuePoll:
     def __init__(self, queue_name):
         self.queue_service = create_queue_service(queue_name)
@@ -44,5 +43,4 @@ class QueuePoll:
                     self.queue_name, message.id, message.pop_receipt)
                 yield message
             sleep(3)
-
 # pylint: enable=too-few-public-methods

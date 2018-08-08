@@ -1,5 +1,3 @@
-# pylint: disable=no-self-use
-
 import os
 from http import HTTPStatus
 
@@ -34,6 +32,7 @@ queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
 logger = get_logger(__name__)
 
 
+# pylint: disable=no-self-use
 class AuthenticationToken(Resource):
     method_decorators = [auth.login_required]
 
@@ -103,6 +102,7 @@ class ProcessImg(Resource):
         else:
             session.close()
             return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
+    # pylint: enable=broad-except
 
     def get(self, img_id):
         logger.debug('checking if img has been processed')
@@ -159,6 +159,7 @@ class ImgUpload(Resource):
                          'following extensions --> {}'
                          .format(ALLOWED_EXTENSIONS))
             return error_msg, HTTPStatus.BAD_REQUEST.value
+    # pylint: enable=broad-except
 
     def _allowed_file(self, filename):
         return ('.' in filename and
@@ -194,6 +195,7 @@ class ImgList(Resource):
         imgs = [f.img_id for f in query]
         session.close()
         return {'imgs': imgs}
+# pylint: enable=no-self-use
 
 
 api.add_resource(ImgUpload, '/api/v1/upload_image')
@@ -203,5 +205,3 @@ api.add_resource(ImgMatchList, '/api/v1/image_matches/<string:img_id>')
 api.add_resource(ImgList, '/api/v1/images')
 api.add_resource(RegisterUser, '/api/v1/register_user')
 api.add_resource(AuthenticationToken, '/api/v1/token')
-
-# pylint: enable=no-self-use

@@ -1,4 +1,3 @@
-# pylint: disable=too-few-public-methods
 from itsdangerous import BadSignature
 from itsdangerous import SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -22,6 +21,7 @@ from faceanalysis.settings import TOKEN_SECRET_KEY
 Base = declarative_base()
 
 
+# pylint: disable=too-few-public-methods
 class User(Base):
     __tablename__ = 'users'
 
@@ -96,6 +96,7 @@ class Match(Base):
     that_img = relationship('Image', foreign_keys=[that_img_id])
     __table_args__ = (UniqueConstraint(
         'this_img_id', 'that_img_id', name='_this_that_uc'),)
+# pylint: enable=too-few-public-methods
 
 
 def init_models(database_engine):
@@ -105,4 +106,3 @@ def init_models(database_engine):
 def delete_models(database_engine):
     Base.metadata.drop_all(database_engine)
 
-# pylint: enable=too-few-public-methods
