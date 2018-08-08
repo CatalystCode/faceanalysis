@@ -30,9 +30,22 @@ services:
         max-size: "50m"
         max-file: "5"
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - "${DATA_DIR}:/app/faceanalysis/images"
+    environment:
+      HOST_DATA_DIR: "${DATA_DIR}"
+      MOUNTED_DATA_DIR: /app/faceanalysis/images
+      LOGGING_LEVEL: ${LOGGING_LEVEL}
+      ALLOWED_IMAGE_FILE_EXTENSIONS: ${ALLOWED_IMAGE_FILE_EXTENSIONS}
+      IMAGE_PROCESSOR_QUEUE: ${IMAGE_PROCESSOR_QUEUE}
+      MYSQL_CONTAINER_NAME: mysql
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      DISTANCE_SCORE_THRESHOLD: ${DISTANCE_SCORE_THRESHOLD}
+      FACE_VECTORIZE_ALGORITHM: ${FACE_VECTORIZE_ALGORITHM}
     env_file:
-      - ./environment_variables.env
+      - ./secrets.env
 
   api:
     restart: always
@@ -51,8 +64,18 @@ services:
         max-file: "5"
     volumes:
       - "${DATA_DIR}:/app/faceanalysis/images"
+    environment:
+      LOGGING_LEVEL: ${LOGGING_LEVEL}
+      ALLOWED_IMAGE_FILE_EXTENSIONS: ${ALLOWED_IMAGE_FILE_EXTENSIONS}
+      IMAGE_PROCESSOR_QUEUE: ${IMAGE_PROCESSOR_QUEUE}
+      MYSQL_CONTAINER_NAME: mysql
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      TOKEN_SECRET_KEY: ${TOKEN_SECRET_KEY}
+      DEFAULT_TOKEN_EXPIRATION_SECS: ${DEFAULT_TOKEN_EXPIRATION_SECS}
     env_file:
-      - ./environment_variables.env
+      - ./secrets.env
 
   mysql:
     restart: always
@@ -65,5 +88,8 @@ services:
         max-file: "5"
     volumes:
       - "${DB_DIR}:/var/lib/mysql"
-    env_file:
-      - ./environment_variables.env
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}

@@ -1,20 +1,26 @@
 # pylint: disable=too-few-public-methods
 
-import os
 from time import sleep
 from azure.storage.queue import QueueService
 from .log import get_logger
+from .settings import STORAGE_ACCOUNT_KEY, STORAGE_ACCOUNT_NAME
+
+logger = get_logger(__name__)
+
+
+def create_queue_service(queue_name):
+    queue_service = QueueService(
+        account_name=STORAGE_ACCOUNT_NAME,
+        account_key=STORAGE_ACCOUNT_KEY)
+    logger.debug('Creating queue %s', queue_name)
+    queue_service.create_queue(queue_name)
+    return queue_service
 
 
 class QueuePoll:
     def __init__(self, queue_name):
-        env_acc_name = os.environ['STORAGE_ACCOUNT_NAME']
-        env_acc_key = os.environ['STORAGE_ACCOUNT_KEY']
-        self.queue_service = QueueService(account_name=env_acc_name,
-                                          account_key=env_acc_key)
+        self.queue_service = create_queue_service(queue_name)
         self.queue_name = queue_name
-        self.queue_service.create_queue(self.queue_name)
-        self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
 
     # pylint: disable=broad-except
     def _get_messages_from_queue(self):
@@ -22,13 +28,13 @@ class QueuePoll:
         try:
             messages = self.queue_service.get_messages(self.queue_name)
             if messages:
-                self.logger.debug("Successfully received messages from queue")
-        except Exception as e:
-            self.logger.error(e, exc_info=True)
+                logger.debug('Got %d messages from queue', len(messages))
+        except Exception:
+            logger.exception('Unable to fetch messages from queue')
         return messages
 
     def poll(self):
-        self.logger.debug("Polling...")
+        logger.debug('Starting polling')
         while True:
             for message in self._get_messages_from_queue():
                 self.queue_service.delete_message(

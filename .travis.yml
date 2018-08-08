@@ -1,7 +1,11 @@
 language: generic
 
 services:
-  - docker
+- docker
+
+before_install:
+- openssl aes-256-cbc -K $encrypted_e08e3836e1cc_key -iv $encrypted_e08e3836e1cc_iv
+  -in ./.travis/secrets.env.enc -out ./secrets.env -d
 
 script:
-  - ./run-test.sh
+- ./run-test.sh

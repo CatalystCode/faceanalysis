@@ -1,24 +1,24 @@
 # pylint: disable=too-few-public-methods
 
 import os
-import base64
+import json
 import numpy as np
-import face_recognition as fr
+from .face_vectorizer import get_face_vectors
 from .queue_poll import QueuePoll
-from .models.database_manager import DatabaseManager
+from .models.database_manager import get_database_manager
 from .models.models import Image, FeatureMapping, Match, ImageStatus
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
+from .settings import (IMAGE_PROCESSOR_QUEUE, ALLOWED_EXTENSIONS,
+                       DISTANCE_SCORE_THRESHOLD, FACE_VECTORIZE_ALGORITHM)
 
 
 class Pipeline:
     def __init__(self):
-        self.db = DatabaseManager()
-        self.logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
+        self.db = get_database_manager()
+        self.logger = get_logger(__name__)
         dirname = os.path.dirname(os.path.abspath(__file__))
         self.img_dir = os.path.join(dirname, 'images')
-        file_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS'].lower()
-        self.allowed_file_extensions = file_extensions.split('_')
         self.logger.debug('pipeline initialized')
 
     def _add_entry_to_session(self, cls, session, **kwargs):
@@ -27,30 +27,28 @@ class Pipeline:
         session.add(row)
         return row
 
-    # pylint: disable=broad-except
-    def _process_img(self, img_id, session):
-        self.logger.debug('processing img')
-        img_has_been_uploaded = False
-        img = None
-        for extension in self.allowed_file_extensions:
+    def _find_image(self, img_id, session):
+        self.logger.debug('finding image %s', img_id)
+
+        img_path = None
+        for extension in ALLOWED_EXTENSIONS:
             img_name = "{}.{}".format(img_id, extension)
             fpath = os.path.join(self.img_dir, img_name)
-            try:
-                img = fr.load_image_file(fpath)
-                img_has_been_uploaded = True
+            if os.path.isfile(fpath):
+                img_path = fpath
                 break
-            except Exception:
-                continue
-        if img_has_been_uploaded:
+
+        if img_path:
             self._add_entry_to_session(Image,
                                        session,
                                        img_id=img_id)
-        return img
+
+        return img_path
 
     # pylint: disable=broad-except
     def _delete_img(self, img_id):
         self.logger.debug('deleting img')
-        for extension in self.allowed_file_extensions:
+        for extension in ALLOWED_EXTENSIONS:
             img_name = "{}.{}".format(img_id, extension)
             fpath = os.path.join(self.img_dir, img_name)
             try:
@@ -61,7 +59,7 @@ class Pipeline:
 
     def _process_feature_mapping(self, features, img_id, session):
         self.logger.debug('processing feature mapping')
-        feature_str = base64.b64encode(features.dumps())
+        feature_str = json.dumps(features)
         self._add_entry_to_session(FeatureMapping,
                                    session,
                                    img_id=img_id,
@@ -91,7 +89,7 @@ class Pipeline:
         img_ids = []
         for row in rows:
             img_ids.append(row.img_id)
-            current_features = np.loads(base64.b64decode(row.features))
+            current_features = np.array(json.loads(row.features))
             known_features.append(current_features)
         return img_ids, np.array(known_features)
 
@@ -129,6 +127,15 @@ class Pipeline:
             return img_status.status == ImageStatusEnum.on_queue.name
         return False
 
+    # pylint: disable=len-as-condition
+    @classmethod
+    def _compute_distances(cls, face_encodings, face_to_compare):
+        if len(face_encodings) == 0:
+            return np.empty((0))
+
+        face_to_compare = np.array(face_to_compare)
+        return np.linalg.norm(face_encodings - face_to_compare, axis=1)
+
     # pylint: disable=too-many-locals
     def _handle_message_from_queue(self, message):
         self.logger.debug("handling message from queue")
@@ -139,37 +146,33 @@ class Pipeline:
             return
         self._update_img_status(
             curr_img_id, status=ImageStatusEnum.processing.name)
-        curr_img = self._process_img(curr_img_id, session)
-        if curr_img is not None:
+        curr_img_path = self._find_image(curr_img_id, session)
+        if curr_img_path is not None:
             prev_img_ids, prev_features = self._get_img_ids_and_features()
             curr_matches = []
-            face_locations = fr.face_locations(curr_img)
-            if not face_locations:
+            face_vectors = get_face_vectors(
+                curr_img_path, FACE_VECTORIZE_ALGORITHM)
+            if not face_vectors:
                 error_msg = "No faces found in image"
                 self._update_img_status(curr_img_id, error_msg=error_msg)
-            for face_location in face_locations:
-                top, right, bottom, left = face_location
-                curr_cropped_img = curr_img[top:bottom, left:right]
-                curr_cropped_features = fr.face_encodings(
-                    curr_cropped_img)
-                if curr_cropped_features:
-                    self._process_feature_mapping(curr_cropped_features[0],
-                                                  curr_img_id,
-                                                  session)
-                    face_distances = fr.face_distance(prev_features,
-                                                      curr_cropped_features)
-                    for count, distance_score in enumerate(face_distances):
-                        distance_score = float(distance_score)
-                        that_img_id = prev_img_ids[count]
-                        if distance_score < 0.6 and curr_img_id != that_img_id:
-                            self._prepare_matches(curr_matches,
-                                                  that_img_id,
-                                                  distance_score)
+            for face_vector in face_vectors:
+                self._process_feature_mapping(
+                    face_vector, curr_img_id, session)
+                face_distances = self._compute_distances(
+                    prev_features, face_vector)
+                for i, distance_score in enumerate(face_distances):
+                    that_img_id = prev_img_ids[i]
+                    if curr_img_id == that_img_id:
+                        continue
+                    distance_score = float(distance_score)
+                    if distance_score >= DISTANCE_SCORE_THRESHOLD:
+                        continue
+                    self._prepare_matches(
+                        curr_matches, that_img_id, distance_score)
             for curr_match in curr_matches:
-                self._process_matches(curr_img_id,
-                                      curr_match["that_img_id"],
-                                      curr_match["distance_score"],
-                                      session)
+                self._process_matches(
+                    curr_img_id, curr_match["that_img_id"],
+                    curr_match["distance_score"], session)
         else:
             error_msg = "Image processed before uploaded"
             self._update_img_status(curr_img_id, error_msg=error_msg)
@@ -180,7 +183,7 @@ class Pipeline:
 
     def begin_pipeline(self):
         self.logger.debug('pipeline began')
-        qp = QueuePoll(os.environ['IMAGE_PROCESSOR_QUEUE'])
+        qp = QueuePoll(IMAGE_PROCESSOR_QUEUE)
         for message in qp.poll():
             self._handle_message_from_queue(message)
             self.logger.debug("polling next iteration")

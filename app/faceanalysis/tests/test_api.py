@@ -6,9 +6,11 @@ from io import BytesIO
 from time import sleep
 from http import HTTPStatus
 from faceanalysis.api import app
-from faceanalysis.models.database_manager import DatabaseManager
+from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import init_models, delete_models
+from faceanalysis.queue_poll import create_queue_service
+from faceanalysis.settings import ALLOWED_EXTENSIONS, IMAGE_PROCESSOR_QUEUE
 
 
 class ApiTestCase(unittest.TestCase):
@@ -17,7 +19,7 @@ class ApiTestCase(unittest.TestCase):
     def setUp(self):
         app.testing = True
         self.app = app.test_client()
-        self.db = DatabaseManager()
+        self.db = get_database_manager()
         init_models(self.db.engine)
         username = 'username'
         password = 'password'
@@ -28,6 +30,11 @@ class ApiTestCase(unittest.TestCase):
 
     def tearDown(self):
         delete_models(self.db.engine)
+
+    @classmethod
+    def tearDownClass(cls):
+        queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
+        queue_service.delete_queue(IMAGE_PROCESSOR_QUEUE)
 
     def _register_default_user(self,
                                username,
@@ -79,8 +86,13 @@ class ApiTestCase(unittest.TestCase):
         return response
 
     def _wait_for_img_to_finish_processing(
-            self, img_id, expected_status_code=HTTPStatus.OK.value):
-        while True:
+            self, img_id, expected_status_code=HTTPStatus.OK.value,
+            max_wait_time_seconds=300):
+
+        total_wait_time_seconds = 0
+        polling_interval_seconds = 5
+
+        while total_wait_time_seconds < max_wait_time_seconds:
             rel_path = '/process_image/'
             response = self.app.get(self.BASE_PATH + rel_path + img_id,
                                     headers=self.headers)
@@ -90,7 +102,12 @@ class ApiTestCase(unittest.TestCase):
             data = json.loads(response.get_data(as_text=True))
             if data['status'] == ImageStatusEnum.finished_processing.name:
                 return response
-            sleep(3)
+
+            sleep(polling_interval_seconds)
+            total_wait_time_seconds += polling_interval_seconds
+
+        self.fail('Waited for more than {} seconds for image {}'
+                  .format(max_wait_time_seconds, img_id))
 
     def _test_end_to_end_with_matching_imgs(self, fnames):
         img_ids = set()
@@ -164,10 +181,8 @@ class ApiTestCase(unittest.TestCase):
 
     def test_end_to_end_with_different_file_formats(self):
         # test jpg && png
-        file_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS'].lower()
-        allowed_file_extensions = file_extensions.split('_')
-        self.assertIn('jpg', allowed_file_extensions)
-        self.assertIn('png', allowed_file_extensions)
+        self.assertIn('jpg', ALLOWED_EXTENSIONS)
+        self.assertIn('png', ALLOWED_EXTENSIONS)
         fnames = {'11.jpg', '12.png'}
         self._test_end_to_end_with_matching_imgs(fnames)
 

@@ -4,14 +4,15 @@ import os
 from http import HTTPStatus
 import werkzeug
 from werkzeug.utils import secure_filename
-from azure.storage.queue import QueueService
 from flask_restful import Resource, Api, reqparse
 from flask import Flask, g
 from .models.models import Match, Image, User, ImageStatus
-from .models.database_manager import DatabaseManager
+from .models.database_manager import get_database_manager
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
+from .queue_poll import create_queue_service
 from .auth import auth
+from .settings import IMAGE_PROCESSOR_QUEUE, ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(
@@ -20,10 +21,8 @@ app.config['UPLOAD_FOLDER'] = os.path.join(
     'images')
 app.url_map.strict_slashes = False
 api = Api(app)
-queue_service = QueueService(account_name=os.environ['STORAGE_ACCOUNT_NAME'],
-                             account_key=os.environ['STORAGE_ACCOUNT_KEY'])
-queue_service.create_queue(os.environ['IMAGE_PROCESSOR_QUEUE'])
-logger = get_logger(__name__, os.environ['LOGGING_LEVEL'])
+queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
+logger = get_logger(__name__)
 
 
 class AuthenticationToken(Resource):
@@ -46,7 +45,7 @@ class RegisterUser(Resource):
         args = parser.parse_args()
         username = args['username']
         password = args['password']
-        db = DatabaseManager()
+        db = get_database_manager()
         session = db.get_session()
         query = session.query(User).filter(User.username == username).first()
         session.close()
@@ -71,7 +70,7 @@ class ProcessImg(Resource):
                             help="img_id missing in the post body")
         args = parser.parse_args()
         img_id = args['img_id']
-        db = DatabaseManager()
+        db = get_database_manager()
         session = db.get_session()
         img_status = session.query(ImageStatus).filter(
             ImageStatus.img_id == img_id).first()
@@ -81,8 +80,7 @@ class ProcessImg(Resource):
                 return ('Image previously placed on queue',
                         HTTPStatus.BAD_REQUEST.value)
             try:
-                queue_service.put_message(os.environ['IMAGE_PROCESSOR_QUEUE'],
-                                          img_id)
+                queue_service.put_message(IMAGE_PROCESSOR_QUEUE, img_id)
                 img_status.status = ImageStatusEnum.on_queue.name
                 db.safe_commit(session)
                 logger.info('img successfully put on queue')
@@ -99,7 +97,8 @@ class ProcessImg(Resource):
 
     def get(self, img_id):
         logger.debug('checking if img has been processed')
-        session = DatabaseManager().get_session()
+        db = get_database_manager()
+        session = db.get_session()
         img_status = session.query(ImageStatus).filter(
             ImageStatus.img_id == img_id).first()
         session.close()
@@ -111,8 +110,6 @@ class ProcessImg(Resource):
 
 class ImgUpload(Resource):
     method_decorators = [auth.login_required]
-    env_extensions = os.environ['ALLOWED_IMAGE_FILE_EXTENSIONS']
-    allowed_extensions = env_extensions.lower().split('_')
 
     # pylint: disable=broad-except
     def post(self):
@@ -125,7 +122,7 @@ class ImgUpload(Resource):
                             location='files')
         args = parser.parse_args()
         img = args['image']
-        db = DatabaseManager()
+        db = get_database_manager()
         if self._allowed_file(img.filename):
             filename = secure_filename(img.filename)
             img_id = filename[:filename.find('.')]
@@ -151,12 +148,12 @@ class ImgUpload(Resource):
         else:
             error_msg = ('Image upload failed: please use one of the '
                          'following extensions --> {}'
-                         .format(self.allowed_extensions))
+                         .format(ALLOWED_EXTENSIONS))
             return error_msg, HTTPStatus.BAD_REQUEST.value
 
     def _allowed_file(self, filename):
         return ('.' in filename and
-                filename.rsplit('.', 1)[1].lower() in self.allowed_extensions)
+                filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS)
 
 
 class ImgMatchList(Resource):
@@ -165,7 +162,8 @@ class ImgMatchList(Resource):
     # pylint: disable=assignment-from-no-return
     def get(self, img_id):
         logger.debug('getting img match list')
-        session = DatabaseManager().get_session()
+        db = get_database_manager()
+        session = db.get_session()
         query = session.query(Match).filter(Match.this_img_id == img_id)
         imgs = []
         distances = []
@@ -182,7 +180,8 @@ class ImgList(Resource):
 
     def get(self):
         logger.debug('getting img list')
-        session = DatabaseManager().get_session()
+        db = get_database_manager()
+        session = db.get_session()
         query = session.query(Image).all()
         imgs = [f.img_id for f in query]
         session.close()
