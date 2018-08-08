@@ -1,5 +1,5 @@
-import os
 from http import HTTPStatus
+from os.path import join
 
 from flask import Flask
 from flask import g
@@ -19,13 +19,10 @@ from faceanalysis.models.models import Match
 from faceanalysis.models.models import User
 from faceanalysis.queue_poll import create_queue_service
 from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import IMAGES_DIRECTORY
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = os.path.join(
-    os.path.dirname(
-        os.path.abspath(__file__)),
-    'images')
 app.url_map.strict_slashes = False
 api = Api(app)
 queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
@@ -143,7 +140,7 @@ class ImgUpload(Resource):
                 error_msg = "Image upload failed: image previously uploaded"
                 return error_msg, HTTPStatus.BAD_REQUEST.value
             try:
-                img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                img.save(join(IMAGES_DIRECTORY, filename))
                 img_status = ImageStatus(img_id=img_id,
                                          status=ImageStatusEnum.uploaded.name,
                                          error_msg=None)

@@ -17,11 +17,11 @@ from faceanalysis.settings import ALLOWED_EXTENSIONS
 from faceanalysis.settings import DISTANCE_SCORE_THRESHOLD
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
+from faceanalysis.settings import IMAGES_DIRECTORY
 
 
 db = get_database_manager()
 logger = get_logger(__name__)
-img_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
 
 
 def _add_entry_to_session(cls, session, **kwargs):
@@ -37,7 +37,7 @@ def _find_image(img_id, session):
     img_path = None
     for extension in ALLOWED_EXTENSIONS:
         img_name = "{}.{}".format(img_id, extension)
-        fpath = os.path.join(img_dir, img_name)
+        fpath = os.path.join(IMAGES_DIRECTORY, img_name)
         if os.path.isfile(fpath):
             img_path = fpath
             break
@@ -53,7 +53,7 @@ def _delete_img(img_id):
     logger.debug('deleting img')
     for extension in ALLOWED_EXTENSIONS:
         img_name = "{}.{}".format(img_id, extension)
-        fpath = os.path.join(img_dir, img_name)
+        fpath = os.path.join(IMAGES_DIRECTORY, img_name)
         try:
             os.remove(fpath)
             logger.debug("removed %s", img_id)

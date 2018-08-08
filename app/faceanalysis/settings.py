@@ -1,4 +1,7 @@
 from os import environ
+from os.path import abspath
+from os.path import dirname
+from os.path import join
 
 LOGGING_LEVEL = environ.get('LOGGING_LEVEL', 'WARNING')
 
@@ -28,3 +31,7 @@ MYSQL_USER = environ['MYSQL_USER']
 MYSQL_PASSWORD = environ['MYSQL_PASSWORD']
 MYSQL_CONTAINER_NAME = environ['MYSQL_CONTAINER_NAME']
 MYSQL_DATABASE = environ['MYSQL_DATABASE']
+
+IMAGES_DIRECTORY = environ.get(
+    'IMAGES_DIRECTORY',
+    join(dirname(abspath(__file__)), 'images'))
