@@ -105,4 +105,3 @@ def init_models(database_engine):
 
 def delete_models(database_engine):
     Base.metadata.drop_all(database_engine)
-
