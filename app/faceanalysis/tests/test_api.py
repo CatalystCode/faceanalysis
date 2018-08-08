@@ -1,21 +1,27 @@
-import os
-import json
-import unittest
 from base64 import b64encode
-from io import BytesIO
-from time import sleep
 from http import HTTPStatus
+from io import BytesIO
+from os.path import abspath
+from os.path import dirname
+from os.path import join
+from time import sleep
+from unittest import TestCase
+import json
+
 from faceanalysis.api import app
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
-from faceanalysis.models.models import init_models, delete_models
+from faceanalysis.models.models import delete_models
+from faceanalysis.models.models import init_models
 from faceanalysis.queue_poll import create_queue_service
-from faceanalysis.settings import ALLOWED_EXTENSIONS, IMAGE_PROCESSOR_QUEUE
+from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
+
+TEST_IMAGES_ROOT = join(abspath(dirname(__file__)), 'images')
+API_VERSION = '/api/v1'
 
 
-class ApiTestCase(unittest.TestCase):
-    BASE_PATH = '/api/v1'
-
+class ApiTestCase(TestCase):
     def setUp(self):
         app.testing = True
         self.app = app.test_client()
@@ -42,23 +48,21 @@ class ApiTestCase(unittest.TestCase):
                                expected_status_code=HTTPStatus.CREATED.value):
         data = {'username': username,
                 'password': password}
-        response = self.app.post(self.BASE_PATH + '/register_user', data=data)
+        response = self.app.post(API_VERSION + '/register_user', data=data)
         self.assertEqual(response.status_code, expected_status_code)
         ApiTestCase.has_registered_user = True
         return response
 
     def _get_token(self, username, password):
         headers = _get_basic_auth_headers(username, password)
-        response = self.app.get(self.BASE_PATH + '/token',
+        response = self.app.get(API_VERSION + '/token',
                                 headers=headers)
         self.assertEqual(response.status_code, HTTPStatus.OK.value)
         return response
 
     def _upload_img(self, fname, expected_status_code=HTTPStatus.OK.value):
-        img_path = _get_img_path(fname)
-        img = _get_img(img_path, fname)
-        data = {'image': img}
-        response = self.app.post(self.BASE_PATH + '/upload_image',
+        data = {'image': _load_test_image(fname)}
+        response = self.app.post(API_VERSION + '/upload_image',
                                  content_type='multipart/form-data',
                                  data=data,
                                  headers=self.headers)
@@ -67,20 +71,20 @@ class ApiTestCase(unittest.TestCase):
 
     def _process_img(self, img_id, expected_status_code=HTTPStatus.OK.value):
         data = {'img_id': img_id}
-        response = self.app.post(self.BASE_PATH + '/process_image',
+        response = self.app.post(API_VERSION + '/process_image',
                                  data=data,
                                  headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
     def _get_imgs(self, expected_status_code=HTTPStatus.OK.value):
-        response = self.app.get(self.BASE_PATH + '/images/',
+        response = self.app.get(API_VERSION + '/images/',
                                 headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
 
     def _get_matches(self, img_id, expected_status_code=HTTPStatus.OK.value):
-        response = self.app.get(self.BASE_PATH + '/image_matches/' + img_id,
+        response = self.app.get(API_VERSION + '/image_matches/' + img_id,
                                 headers=self.headers)
         self.assertEqual(response.status_code, expected_status_code)
         return response
@@ -94,7 +98,7 @@ class ApiTestCase(unittest.TestCase):
 
         while total_wait_time_seconds < max_wait_time_seconds:
             rel_path = '/process_image/'
-            response = self.app.get(self.BASE_PATH + rel_path + img_id,
+            response = self.app.get(API_VERSION + rel_path + img_id,
                                     headers=self.headers)
             self.assertEqual(response.status_code, expected_status_code)
             if expected_status_code == HTTPStatus.BAD_REQUEST.value:
@@ -207,13 +211,8 @@ def _get_basic_auth_headers(username_or_token, password):
     return headers
 
 
-def _get_img(img_path, fname):
+def _load_test_image(fname):
+    img_path = join(TEST_IMAGES_ROOT, fname)
     with open(img_path, 'rb') as img:
-        image = (BytesIO(img.read()), fname)
-        return image
-
-
-def _get_img_path(fname):
-    dirname = os.path.dirname(os.path.abspath(__file__))
-    img_path = os.path.join(os.path.join(dirname, 'images'), fname)
-    return img_path
+        image_content = BytesIO(img.read())
+        return image_content, fname

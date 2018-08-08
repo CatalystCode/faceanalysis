@@ -5,8 +5,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 from faceanalysis.log import get_logger
-from faceanalysis.settings import MYSQL_CONTAINER_NAME
 from faceanalysis.settings import MYSQL_DATABASE
+from faceanalysis.settings import MYSQL_HOST
 from faceanalysis.settings import MYSQL_PASSWORD
 from faceanalysis.settings import MYSQL_USER
 
@@ -18,7 +18,7 @@ class DatabaseManager:
         engine_credential = "{}://{}:{}@{}:{}/{}".format(mysql_connector_str,
                                                          MYSQL_USER,
                                                          MYSQL_PASSWORD,
-                                                         MYSQL_CONTAINER_NAME,
+                                                         MYSQL_HOST,
                                                          mysql_port,
                                                          MYSQL_DATABASE)
         self.engine = create_engine(engine_credential,

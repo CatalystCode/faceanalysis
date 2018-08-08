@@ -11,3 +11,7 @@ itsdangerous==0.24
 mysql-connector-python==8.0.5
 numpy==1.14.0
 passlib==1.7.1
+
+# libcloud with fixes for azure storage, remove when apache-libcloud>2.3.0 is published
+https://github.com/apache/libcloud/archive/9039968249cba20a546e5d1eb54ad2efbfa79f43.zip
+lockfile==0.12.2
