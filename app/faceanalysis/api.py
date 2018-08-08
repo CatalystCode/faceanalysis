@@ -1,5 +1,4 @@
 from http import HTTPStatus
-from os.path import join
 
 from flask import Flask
 from flask import g
@@ -19,8 +18,10 @@ from faceanalysis.models.models import Match
 from faceanalysis.models.models import User
 from faceanalysis.queue_poll import create_queue_service
 from faceanalysis.settings import ALLOWED_EXTENSIONS
-from faceanalysis.settings import IMAGES_DIRECTORY
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
+from faceanalysis.storage import StorageError
+from faceanalysis.storage import can_be_stored
+from faceanalysis.storage import store_image
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -117,7 +118,6 @@ class ProcessImg(Resource):
 class ImgUpload(Resource):
     method_decorators = [auth.login_required]
 
-    # pylint: disable=broad-except
     def post(self):
         logger.debug('uploading img')
         parser = reqparse.RequestParser()
@@ -129,7 +129,7 @@ class ImgUpload(Resource):
         args = parser.parse_args()
         img = args['image']
         db = get_database_manager()
-        if self._allowed_file(img.filename):
+        if can_be_stored(img.filename):
             filename = secure_filename(img.filename)
             img_id = filename[:filename.find('.')]
             session = db.get_session()
@@ -140,7 +140,7 @@ class ImgUpload(Resource):
                 error_msg = "Image upload failed: image previously uploaded"
                 return error_msg, HTTPStatus.BAD_REQUEST.value
             try:
-                img.save(join(IMAGES_DIRECTORY, filename))
+                store_image(img.stream, filename)
                 img_status = ImageStatus(img_id=img_id,
                                          status=ImageStatusEnum.uploaded.name,
                                          error_msg=None)
@@ -149,18 +149,14 @@ class ImgUpload(Resource):
                 db.safe_commit(session)
                 logger.info('img successfully uploaded')
                 return 'OK', HTTPStatus.OK.value
-            except Exception:
+            except StorageError:
+                logger.exception('Unable to store image %s', img_id)
                 return 'Server error', HTTPStatus.INTERNAL_SERVER_ERROR.value
         else:
             error_msg = ('Image upload failed: please use one of the '
                          'following extensions --> {}'
                          .format(ALLOWED_EXTENSIONS))
             return error_msg, HTTPStatus.BAD_REQUEST.value
-    # pylint: enable=broad-except
-
-    def _allowed_file(self, filename):
-        return ('.' in filename and
-                filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS)
 
 
 class ImgMatchList(Resource):

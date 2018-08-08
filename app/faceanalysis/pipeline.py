@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 
 from faceanalysis.face_vectorizer import face_vector_from_text
@@ -13,12 +11,12 @@ from faceanalysis.models.models import Image
 from faceanalysis.models.models import ImageStatus
 from faceanalysis.models.models import Match
 from faceanalysis.queue_poll import QueuePoll
-from faceanalysis.settings import ALLOWED_EXTENSIONS
 from faceanalysis.settings import DISTANCE_SCORE_THRESHOLD
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
-from faceanalysis.settings import IMAGES_DIRECTORY
-
+from faceanalysis.storage import StorageError
+from faceanalysis.storage import delete_image
+from faceanalysis.storage import get_image_path
 
 db = get_database_manager()
 logger = get_logger(__name__)
@@ -34,32 +32,13 @@ def _add_entry_to_session(cls, session, **kwargs):
 def _find_image(img_id, session):
     logger.debug('finding image %s', img_id)
 
-    img_path = None
-    for extension in ALLOWED_EXTENSIONS:
-        img_name = "{}.{}".format(img_id, extension)
-        fpath = os.path.join(IMAGES_DIRECTORY, img_name)
-        if os.path.isfile(fpath):
-            img_path = fpath
-            break
+    try:
+        img_path = get_image_path(img_id)
+    except StorageError:
+        return None
 
-    if img_path:
-        _add_entry_to_session(Image, session, img_id=img_id)
-
+    _add_entry_to_session(Image, session, img_id=img_id)
     return img_path
-
-
-# pylint: disable=broad-except
-def _delete_img(img_id):
-    logger.debug('deleting img')
-    for extension in ALLOWED_EXTENSIONS:
-        img_name = "{}.{}".format(img_id, extension)
-        fpath = os.path.join(IMAGES_DIRECTORY, img_name)
-        try:
-            os.remove(fpath)
-            logger.debug("removed %s", img_id)
-        except Exception:
-            continue
-# pylint: enable=broad-except
 
 
 def _process_feature_mapping(features, img_id, session):
@@ -175,7 +154,7 @@ def _handle_message_from_queue(img_id):
         _update_img_status(img_id, error_msg="Image processed before uploaded")
     _update_img_status(img_id, status=ImageStatusEnum.finished_processing)
     db.safe_commit(session)
-    _delete_img(img_id)
+    delete_image(img_id)
 
 
 def begin_pipeline():
