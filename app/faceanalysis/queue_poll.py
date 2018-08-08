@@ -8,12 +8,13 @@ from .settings import STORAGE_ACCOUNT_KEY, STORAGE_ACCOUNT_NAME
 
 class QueuePoll:
     def __init__(self, queue_name):
+        self.logger = get_logger(__name__)
         self.queue_service = QueueService(
             account_name=STORAGE_ACCOUNT_NAME,
             account_key=STORAGE_ACCOUNT_KEY)
         self.queue_name = queue_name
+        self.logger.debug('Creating queue %s', queue_name)
         self.queue_service.create_queue(self.queue_name)
-        self.logger = get_logger(__name__)
 
     # pylint: disable=broad-except
     def _get_messages_from_queue(self):

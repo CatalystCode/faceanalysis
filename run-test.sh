@@ -19,4 +19,5 @@ docker-compose run --rm --no-deps --entrypoint=python3 api -m flake8 /app/facean
 APP_PORT="8080" \
 DATA_DIR="${data_dir}" \
 DB_DIR="${db_dir}" \
+IMAGE_PROCESSOR_QUEUE="faceanalysis${RANDOM}" \
 docker-compose run --rm api nose2
