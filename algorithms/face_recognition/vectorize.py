@@ -20,14 +20,18 @@ def _cli():
     from argparse import FileType
 
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument('image', type=FileType('r'))
+    parser.add_argument('images', type=FileType('r'), nargs='+')
 
     args = parser.parse_args()
-    image = args.image
-    image.close()
-    img_path = image.name
+    image_paths = []
+    for image in args.images:
+        image.close()
+        image_paths.append(image.name)
 
-    vectors = get_face_vectors(img_path)
+    # naive implementation for demo purposes, could also batch process images
+    vectors = {image_path: get_face_vectors(image_path)
+               for image_path in image_paths}
+
     print(json.dumps({'faceVectors': vectors}))
 
 
