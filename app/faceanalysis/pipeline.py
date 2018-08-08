@@ -141,50 +141,45 @@ def _compute_distances(face_encodings, face_to_compare):
 # pylint: enable=len-as-condition
 
 
-# pylint: disable=too-many-locals
-def _handle_message_from_queue(message):
-    logger.debug("handling message from queue")
-    session = db.get_session()
-    curr_img_id = message.content
-    if not _img_should_be_processed(curr_img_id):
-        session.close()
+def _handle_message_from_queue(img_id):
+    if not _img_should_be_processed(img_id):
         return
-    _update_img_status(curr_img_id, status=ImageStatusEnum.processing)
-    curr_img_path = _find_image(curr_img_id, session)
-    if curr_img_path is not None:
+
+    logger.debug("handling message from queue for image %s", img_id)
+    _update_img_status(img_id, status=ImageStatusEnum.processing)
+    session = db.get_session()
+    img_path = _find_image(img_id, session)
+    if img_path is not None:
         prev_img_ids, prev_features = _get_img_ids_and_features()
-        curr_matches = []
-        face_vectors = get_face_vectors(
-            curr_img_path, FACE_VECTORIZE_ALGORITHM)
+        matches = []
+        face_vectors = get_face_vectors(img_path, FACE_VECTORIZE_ALGORITHM)
         if not face_vectors:
-            error_msg = "No faces found in image"
-            _update_img_status(curr_img_id, error_msg=error_msg)
+            _update_img_status(img_id, error_msg="No faces found in image")
+
         for face_vector in face_vectors:
-            _process_feature_mapping(face_vector, curr_img_id, session)
-            face_distances = _compute_distances(prev_features, face_vector)
-            for i, distance_score in enumerate(face_distances):
-                that_img_id = prev_img_ids[i]
-                if curr_img_id == that_img_id:
+            _process_feature_mapping(face_vector, img_id, session)
+            distances = _compute_distances(prev_features, face_vector)
+            for that_img_id, distance in zip(prev_img_ids, distances):
+                if img_id == that_img_id:
                     continue
-                distance_score = float(distance_score)
-                if distance_score >= DISTANCE_SCORE_THRESHOLD:
+                distance = float(distance)
+                if distance >= DISTANCE_SCORE_THRESHOLD:
                     continue
-                _prepare_matches(curr_matches, that_img_id, distance_score)
-        for curr_match in curr_matches:
-            _process_matches(curr_img_id, curr_match["that_img_id"],
-                             curr_match["distance_score"], session)
+                _prepare_matches(matches, that_img_id, distance)
+
+        for match in matches:
+            _process_matches(img_id, match["that_img_id"],
+                             match["distance_score"], session)
     else:
-        error_msg = "Image processed before uploaded"
-        _update_img_status(curr_img_id, error_msg=error_msg)
-    _update_img_status(curr_img_id, status=ImageStatusEnum.finished_processing)
+        _update_img_status(img_id, error_msg="Image processed before uploaded")
+    _update_img_status(img_id, status=ImageStatusEnum.finished_processing)
     db.safe_commit(session)
-    _delete_img(curr_img_id)
-# pylint: enable=too-many-locals
+    _delete_img(img_id)
 
 
 def begin_pipeline():
     logger.debug('pipeline began')
     qp = QueuePoll(IMAGE_PROCESSOR_QUEUE)
     for message in qp.poll():
-        _handle_message_from_queue(message)
+        _handle_message_from_queue(message.content)
         logger.debug("polling next iteration")
