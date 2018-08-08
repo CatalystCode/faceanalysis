@@ -37,8 +37,8 @@ def get_face_vectors(img_path, algorithm):
     stdout = client.containers.run(algorithm, img_mount,
                                    volumes=volumes, auto_remove=True)
 
-    face_vectors = json.loads(stdout.decode('ascii')).get('faceVectors', [])
-    return face_vectors
+    face_vectors = json.loads(stdout.decode('ascii')).get('faceVectors', {})
+    return face_vectors.get(img_mount, [])
 
 
 def face_vector_to_text(vector):
