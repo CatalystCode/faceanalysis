@@ -5,10 +5,8 @@ set -e
 data_dir="$(mktemp -d)"
 db_dir="$(mktemp -d)"
 
-cleanup() { rm -rf "${data_dir}" "${db_dir}"; }
+cleanup() { rm -rf "${data_dir}" "${db_dir}"; docker-compose down; }
 trap cleanup EXIT
-
-docker-compose down
 
 DEVTOOLS="true" \
 docker-compose build
