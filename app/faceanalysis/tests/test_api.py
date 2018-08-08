@@ -80,8 +80,13 @@ class ApiTestCase(unittest.TestCase):
         return response
 
     def _wait_for_img_to_finish_processing(
-            self, img_id, expected_status_code=HTTPStatus.OK.value):
-        while True:
+            self, img_id, expected_status_code=HTTPStatus.OK.value,
+            max_wait_time_seconds=300):
+
+        total_wait_time_seconds = 0
+        polling_interval_seconds = 5
+
+        while total_wait_time_seconds < max_wait_time_seconds:
             rel_path = '/process_image/'
             response = self.app.get(self.BASE_PATH + rel_path + img_id,
                                     headers=self.headers)
@@ -91,7 +96,12 @@ class ApiTestCase(unittest.TestCase):
             data = json.loads(response.get_data(as_text=True))
             if data['status'] == ImageStatusEnum.finished_processing.name:
                 return response
-            sleep(3)
+
+            sleep(polling_interval_seconds)
+            total_wait_time_seconds += polling_interval_seconds
+
+        self.fail('Waited for more than {} seconds for image {}'
+                  .format(max_wait_time_seconds, img_id))
 
     def _test_end_to_end_with_matching_imgs(self, fnames):
         img_ids = set()
