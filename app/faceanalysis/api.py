@@ -2,6 +2,7 @@ from http import HTTPStatus
 
 from flask import Flask
 from flask import g
+from flask_httpauth import HTTPBasicAuth
 from flask_restful import Api
 from flask_restful import Resource
 from flask_restful.reqparse import RequestParser
@@ -15,11 +16,12 @@ from faceanalysis.settings import ALLOWED_EXTENSIONS
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 api = Api(app)
+basic_auth = HTTPBasicAuth()
 
 
 # pylint: disable=no-self-use
 class AuthenticationToken(Resource):
-    method_decorators = [auth.login_required]
+    method_decorators = [basic_auth.login_required]
 
     def get(self):
         token = auth.generate_auth_token(g.user)
@@ -48,7 +50,7 @@ class RegisterUser(Resource):
 
 
 class ProcessImg(Resource):
-    method_decorators = [auth.login_required]
+    method_decorators = [basic_auth.login_required]
 
     def post(self):
         parser = RequestParser()
@@ -78,7 +80,7 @@ class ProcessImg(Resource):
 
 
 class ImgUpload(Resource):
-    method_decorators = [auth.login_required]
+    method_decorators = [basic_auth.login_required]
 
     def post(self):
         parser = RequestParser()
@@ -106,7 +108,7 @@ class ImgUpload(Resource):
 
 
 class ImgMatchList(Resource):
-    method_decorators = [auth.login_required]
+    method_decorators = [basic_auth.login_required]
 
     def get(self, img_id):
         images, distances = domain.lookup_matching_images(img_id)
@@ -114,12 +116,26 @@ class ImgMatchList(Resource):
 
 
 class ImgList(Resource):
-    method_decorators = [auth.login_required]
+    method_decorators = [basic_auth.login_required]
 
     def get(self):
         images = domain.list_images()
         return {'imgs': images}
 # pylint: enable=no-self-use
+
+
+@basic_auth.verify_password
+def verify_password(username_or_token, password):
+    try:
+        user = auth.load_user_from_auth_token(username_or_token)
+    except auth.InvalidAuthToken:
+        try:
+            user = auth.load_user(username_or_token, password)
+        except auth.AuthError:
+            return False
+
+    g.user = user
+    return True
 
 
 api.add_resource(ImgUpload, '/api/v1/upload_image')

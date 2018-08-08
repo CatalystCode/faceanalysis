@@ -1,21 +1,31 @@
-from flask import g
-from flask_httpauth import HTTPBasicAuth
 from itsdangerous import BadSignature
 from itsdangerous import SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from passlib.apps import custom_app_context as pwd_context
+from passlib.apps import custom_app_context as password_context
 
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.models import User
 from faceanalysis.settings import TOKEN_EXPIRATION
 from faceanalysis.settings import TOKEN_SECRET_KEY
 
-auth = HTTPBasicAuth()
 
-login_required = auth.login_required
+class AuthError(Exception):
+    pass
 
 
-class DuplicateUser(Exception):
+class InvalidPassword(AuthError):
+    pass
+
+
+class InvalidAuthToken(AuthError):
+    pass
+
+
+class UserDoesNotExist(AuthError):
+    pass
+
+
+class DuplicateUser(AuthError):
     pass
 
 
@@ -24,12 +34,12 @@ def generate_auth_token(user, expiration=TOKEN_EXPIRATION):
     return serializer.dumps({'id': user.id})
 
 
-def _load_user_from_auth_token(token):
+def load_user_from_auth_token(token):
     serializer = Serializer(TOKEN_SECRET_KEY)
     try:
         data = serializer.loads(token)
     except (BadSignature, SignatureExpired):
-        return None
+        raise InvalidAuthToken()
 
     db = get_database_manager()
     session = db.get_session()
@@ -40,25 +50,21 @@ def _load_user_from_auth_token(token):
     return user
 
 
-@auth.verify_password
-def verify_password(username_or_token, password):
-    user = _load_user_from_auth_token(username_or_token)
-    if user:
-        g.user = user
-        return True
-
+def load_user(username, password):
     db = get_database_manager()
     session = db.get_session()
-    user = session.query(User)\
-        .filter(User.username == username_or_token)\
+    user = session.query(User) \
+        .filter(User.username == username) \
         .first()
     session.close()
 
-    if not user or not pwd_context.verify(password, user.password_hash):
-        return False
+    if not user:
+        raise UserDoesNotExist()
 
-    g.user = user
-    return True
+    if not password_context.verify(password, user.password_hash):
+        raise InvalidPassword()
+
+    return user
 
 
 def register_user(username, password):
@@ -74,7 +80,7 @@ def register_user(username, password):
 
     user = User()
     user.username = username
-    user.password_hash = pwd_context.encrypt(password)
+    user.password_hash = password_context.encrypt(password)
     session = db.get_session()
     session.add(user)
     db.safe_commit(session)
