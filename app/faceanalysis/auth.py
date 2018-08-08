@@ -3,6 +3,7 @@ from flask_httpauth import HTTPBasicAuth
 from itsdangerous import BadSignature
 from itsdangerous import SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from passlib.apps import custom_app_context as pwd_context
 
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.models import User
@@ -10,7 +11,6 @@ from faceanalysis.settings import TOKEN_EXPIRATION
 from faceanalysis.settings import TOKEN_SECRET_KEY
 
 auth = HTTPBasicAuth()
-
 
 login_required = auth.login_required
 
@@ -52,13 +52,12 @@ def verify_password(username_or_token, password):
     user = session.query(User)\
         .filter(User.username == username_or_token)\
         .first()
+    session.close()
 
-    if not user or not user.verify_password(password):
-        session.close()
+    if not user or not pwd_context.verify(password, user.password_hash):
         return False
 
     g.user = user
-    session.close()
     return True
 
 
@@ -68,13 +67,14 @@ def register_user(username, password):
     user = session.query(User) \
         .filter(User.username == username) \
         .first()
+    session.close()
 
     if user is not None:
-        session.close()
         raise DuplicateUser()
 
-    user = User(username=username)
-    user.hash_password(password)
+    user = User()
+    user.username = username
+    user.password_hash = pwd_context.encrypt(password)
     session = db.get_session()
     session.add(user)
     db.safe_commit(session)
