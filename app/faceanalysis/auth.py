@@ -1,8 +1,11 @@
 from flask import g
 from flask_httpauth import HTTPBasicAuth
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.models import User
+from faceanalysis.settings import TOKEN_SECRET_KEY
+from faceanalysis.settings import TOKEN_EXPIRATION
 
 auth = HTTPBasicAuth()
 
@@ -12,6 +15,11 @@ login_required = auth.login_required
 
 class DuplicateUser(Exception):
     pass
+
+
+def generate_auth_token(user, expiration=TOKEN_EXPIRATION):
+    serializer = Serializer(TOKEN_SECRET_KEY, expires_in=expiration)
+    return serializer.dumps({'id': user.id})
 
 
 @auth.verify_password

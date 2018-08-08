@@ -22,7 +22,7 @@ class AuthenticationToken(Resource):
     method_decorators = [auth.login_required]
 
     def get(self):
-        token = g.user.generate_auth_token()
+        token = auth.generate_auth_token(g.user)
         return {'token': token.decode('ascii')}
 
 

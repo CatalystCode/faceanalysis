@@ -15,7 +15,6 @@ from sqlalchemy.schema import ForeignKey
 from sqlalchemy.sql import func
 
 from faceanalysis.models.database_manager import get_database_manager
-from faceanalysis.settings import TOKEN_EXPIRATION
 from faceanalysis.settings import TOKEN_SECRET_KEY
 
 Base = declarative_base()
@@ -34,11 +33,6 @@ class User(Base):
 
     def verify_password(self, password):
         return pwd_context.verify(password, self.password_hash)
-
-    def generate_auth_token(self, expiration=None):
-        expiration = expiration or TOKEN_EXPIRATION
-        serializer = Serializer(TOKEN_SECRET_KEY, expires_in=expiration)
-        return serializer.dumps({'id': self.id})
 
     @staticmethod
     def verify_auth_token(token):
