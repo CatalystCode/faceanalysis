@@ -9,7 +9,8 @@ from faceanalysis.api import app
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import init_models, delete_models
-from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.queue_poll import create_queue_service
+from faceanalysis.settings import ALLOWED_EXTENSIONS, IMAGE_PROCESSOR_QUEUE
 
 
 class ApiTestCase(unittest.TestCase):
@@ -29,6 +30,11 @@ class ApiTestCase(unittest.TestCase):
 
     def tearDown(self):
         delete_models(self.db.engine)
+
+    @classmethod
+    def tearDownClass(cls):
+        queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
+        queue_service.delete_queue(IMAGE_PROCESSOR_QUEUE)
 
     def _register_default_user(self,
                                username,

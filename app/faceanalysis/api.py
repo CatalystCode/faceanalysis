@@ -4,16 +4,15 @@ import os
 from http import HTTPStatus
 import werkzeug
 from werkzeug.utils import secure_filename
-from azure.storage.queue import QueueService
 from flask_restful import Resource, Api, reqparse
 from flask import Flask, g
 from .models.models import Match, Image, User, ImageStatus
 from .models.database_manager import get_database_manager
 from .models.image_status_enum import ImageStatusEnum
 from .log import get_logger
+from .queue_poll import create_queue_service
 from .auth import auth
-from .settings import (STORAGE_ACCOUNT_NAME, STORAGE_ACCOUNT_KEY,
-                       IMAGE_PROCESSOR_QUEUE, ALLOWED_EXTENSIONS)
+from .settings import IMAGE_PROCESSOR_QUEUE, ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join(
@@ -22,9 +21,7 @@ app.config['UPLOAD_FOLDER'] = os.path.join(
     'images')
 app.url_map.strict_slashes = False
 api = Api(app)
-queue_service = QueueService(account_name=STORAGE_ACCOUNT_NAME,
-                             account_key=STORAGE_ACCOUNT_KEY)
-queue_service.create_queue(IMAGE_PROCESSOR_QUEUE)
+queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
 logger = get_logger(__name__)
 
 
