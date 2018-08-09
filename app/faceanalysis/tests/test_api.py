@@ -1,4 +1,5 @@
 from base64 import b64encode
+from datetime import timedelta
 from http import HTTPStatus
 from io import BytesIO
 from os.path import abspath
@@ -6,16 +7,14 @@ from os.path import dirname
 from os.path import join
 from time import sleep
 from unittest import TestCase
-import json
 
 from faceanalysis.api import app
+from faceanalysis.pipeline import celery
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import delete_models
 from faceanalysis.models.models import init_models
-from faceanalysis.queue_poll import create_queue_service
 from faceanalysis.settings import ALLOWED_EXTENSIONS
-from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
 
 TEST_IMAGES_ROOT = join(abspath(dirname(__file__)), 'images')
 API_VERSION = '/api/v1'
@@ -30,8 +29,7 @@ class ApiTestCase(TestCase):
         username = 'username'
         password = 'password'
         self._register_default_user(username, password)
-        token_response = self._get_token(username, password)
-        token = json.loads(token_response.get_data(as_text=True))['token']
+        token = self._get_token(username, password).get_json()['token']
         self.headers = _get_basic_auth_headers(token, 'any value')
 
     def tearDown(self):
@@ -39,8 +37,7 @@ class ApiTestCase(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
-        queue_service.delete_queue(IMAGE_PROCESSOR_QUEUE)
+        celery.control.purge()
 
     def _register_default_user(self,
                                username,
@@ -91,27 +88,24 @@ class ApiTestCase(TestCase):
 
     def _wait_for_img_to_finish_processing(
             self, img_id, expected_status_code=HTTPStatus.OK.value,
-            max_wait_time_seconds=300):
+            wait_time=timedelta(minutes=3),
+            polling_interval=timedelta(seconds=5)):
 
-        total_wait_time_seconds = 0
-        polling_interval_seconds = 5
-
-        while total_wait_time_seconds < max_wait_time_seconds:
+        while wait_time.seconds > 0:
             rel_path = '/process_image/'
             response = self.app.get(API_VERSION + rel_path + img_id,
                                     headers=self.headers)
             self.assertEqual(response.status_code, expected_status_code)
             if expected_status_code == HTTPStatus.BAD_REQUEST.value:
                 return response
-            data = json.loads(response.get_data(as_text=True))
-            if data['status'] == ImageStatusEnum.finished_processing.name:
+            status = response.get_json()['status']
+            if status == ImageStatusEnum.finished_processing.name:
                 return response
 
-            sleep(polling_interval_seconds)
-            total_wait_time_seconds += polling_interval_seconds
+            sleep(polling_interval.seconds)
+            wait_time -= polling_interval
 
-        self.fail('Waited for more than {} seconds for image {}'
-                  .format(max_wait_time_seconds, img_id))
+        self.fail('Waited too long for image {}'.format(img_id))
 
     def _test_end_to_end_with_matching_imgs(self, fnames):
         img_ids = set()
@@ -123,17 +117,14 @@ class ApiTestCase(TestCase):
             self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
 
-        imgs_response = self._get_imgs()
-        imgs_data = json.loads(imgs_response.get_data(as_text=True))
-        self.assertTrue(img_ids.issubset(set(imgs_data['imgs'])))
+        imgs = self._get_imgs().get_json()['imgs']
+        self.assertTrue(img_ids.issubset(set(imgs)))
 
         for img_id in img_ids:
-            matches_response = self._get_matches(img_id)
-            matches_data = json.loads(matches_response.get_data(as_text=True))
-            should_be_matches = img_ids - set([img_id])
-            self.assertTrue(should_be_matches.issubset(
-                set(matches_data['imgs'])))
-            self.assertNotIn(img_id, matches_data['imgs'])
+            imgs = self._get_matches(img_id).get_json()['imgs']
+            should_be_matches = img_ids - {img_id}
+            self.assertTrue(should_be_matches.issubset(set(imgs)))
+            self.assertNotIn(img_id, imgs)
 
     def test_end_to_end_with_one_face_per_img_that_match(self):
         fnames = {'1.jpg', '2.jpg'}
@@ -154,9 +145,8 @@ class ApiTestCase(TestCase):
         self._process_img(img_id)
         self._wait_for_img_to_finish_processing(img_id)
 
-        imgs_response = self._get_imgs()
-        imgs_data = json.loads(imgs_response.get_data(as_text=True))
-        self.assertIn(img_id, imgs_data['imgs'])
+        imgs = self._get_imgs().get_json()['imgs']
+        self.assertIn(img_id, imgs)
 
     def test_processing_img_that_has_not_yet_been_uploaded(self):
         img_id_not_yet_uploaded = '100'
@@ -179,9 +169,8 @@ class ApiTestCase(TestCase):
             else:
                 self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
-            imgs_response = self._get_imgs()
-            imgs_data = json.loads(imgs_response.get_data(as_text=True))
-            self.assertIn(img_id, imgs_data['imgs'])
+            imgs = self._get_imgs().get_json()['imgs']
+            self.assertIn(img_id, imgs)
 
     def test_end_to_end_with_different_file_formats(self):
         # test jpg && png
@@ -191,17 +180,17 @@ class ApiTestCase(TestCase):
         self._test_end_to_end_with_matching_imgs(fnames)
 
     def test_network_outages(self):
-        pass
+        self.skipTest('Not implemented')
 
     def test_queue_failures(self):
-        pass
+        self.skipTest('Not implemented')
 
     def test_upload_file_not_allowed(self):
         fname = '0.txt'
         self._upload_img(fname, HTTPStatus.BAD_REQUEST.value)
 
     def test_upload_arbitrarily_large_file(self):
-        pass
+        self.skipTest('Not implemented')
 
 
 def _get_basic_auth_headers(username_or_token, password):

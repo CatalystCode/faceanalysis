@@ -20,4 +20,4 @@ APP_PORT="8080" \
 DATA_DIR="${data_dir}" \
 DB_DIR="${db_dir}" \
 IMAGE_PROCESSOR_QUEUE="faceanalysis${RANDOM}" \
-docker-compose run --rm api nose2
+docker-compose run --rm api nose2 -v

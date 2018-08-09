@@ -1,4 +1,7 @@
+from datetime import datetime
+
 import numpy as np
+from celery import Celery
 
 from faceanalysis.face_vectorizer import face_vector_from_text
 from faceanalysis.face_vectorizer import face_vector_to_text
@@ -10,16 +13,18 @@ from faceanalysis.models.models import FeatureMapping
 from faceanalysis.models.models import Image
 from faceanalysis.models.models import ImageStatus
 from faceanalysis.models.models import Match
-from faceanalysis.queue_poll import QueuePoll
 from faceanalysis.settings import DISTANCE_SCORE_THRESHOLD
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
+from faceanalysis.settings import CELERY_BROKER
 from faceanalysis.storage import StorageError
 from faceanalysis.storage import delete_image
 from faceanalysis.storage import get_image_path
 
 db = get_database_manager()
 logger = get_logger(__name__)
+celery = Celery('pipeline', broker=CELERY_BROKER)
+celery.conf.task_default_queue = IMAGE_PROCESSOR_QUEUE
 
 
 def _add_entry_to_session(cls, session, **kwargs):
@@ -29,19 +34,7 @@ def _add_entry_to_session(cls, session, **kwargs):
     return row
 
 
-def _find_image(img_id, session):
-    logger.debug('finding image %s', img_id)
-
-    try:
-        img_path = get_image_path(img_id)
-    except StorageError:
-        return None
-
-    _add_entry_to_session(Image, session, img_id=img_id)
-    return img_path
-
-
-def _process_feature_mapping(features, img_id, session):
+def _store_face_vector(features, img_id, session):
     logger.debug('processing feature mapping')
     _add_entry_to_session(FeatureMapping, session,
                           img_id=img_id,
@@ -49,7 +42,7 @@ def _process_feature_mapping(features, img_id, session):
     return features
 
 
-def _process_matches(this_img_id, that_img_id, distance_score, session):
+def _store_matches(this_img_id, that_img_id, distance_score, session):
     logger.debug('processing matches')
     _add_entry_to_session(Match, session,
                           this_img_id=this_img_id,
@@ -61,11 +54,12 @@ def _process_matches(this_img_id, that_img_id, distance_score, session):
                           distance_score=distance_score)
 
 
-def _get_img_ids_and_features():
+def _load_image_ids_and_face_vectors():
     logger.debug('getting all img ids and respective features')
     session = db.get_session()
     known_features = []
-    rows = session.query(FeatureMapping).all()
+    rows = session.query(FeatureMapping)\
+        .all()
     session.close()
     img_ids = []
     for row in rows:
@@ -82,6 +76,7 @@ def _prepare_matches(matches, that_img_id, distance_score):
             match_exists = True
             match["distance_score"] = min(match["distance_score"],
                                           distance_score)
+
     if not match_exists:
         matches.append({
             "that_img_id": that_img_id,
@@ -101,16 +96,6 @@ def _update_img_status(img_id, status=None, error_msg=None):
     db.safe_commit(session)
 
 
-def _img_should_be_processed(img_id):
-    session = db.get_session()
-    img_status = session.query(ImageStatus).filter(
-        ImageStatus.img_id == img_id).first()
-    session.close()
-    if img_status is None:
-        return False
-    return img_status.status == ImageStatusEnum.on_queue.name
-
-
 # pylint: disable=len-as-condition
 def _compute_distances(face_encodings, face_to_compare):
     if len(face_encodings) == 0:
@@ -121,45 +106,50 @@ def _compute_distances(face_encodings, face_to_compare):
 # pylint: enable=len-as-condition
 
 
-def _handle_message_from_queue(img_id):
-    if not _img_should_be_processed(img_id):
+@celery.task(ignore_result=True)
+def process_image(img_id):
+    logger.info('Processing image %s', img_id)
+    try:
+        img_path = get_image_path(img_id)
+    except StorageError:
+        logger.error("Can't process image %s since it doesn't exist", img_id)
+        _update_img_status(img_id, error_msg='Image processed before uploaded')
         return
 
-    logger.debug("handling message from queue for image %s", img_id)
+    start = datetime.utcnow()
     _update_img_status(img_id, status=ImageStatusEnum.processing)
+
+    prev_img_ids, prev_face_vectors = _load_image_ids_and_face_vectors()
+    face_vectors = get_face_vectors(img_path, FACE_VECTORIZE_ALGORITHM)
+    logger.info('Found %d faces in image %s', len(face_vectors), img_id)
+    _update_img_status(img_id, status=ImageStatusEnum.face_vector_computed)
+
     session = db.get_session()
-    img_path = _find_image(img_id, session)
-    if img_path is not None:
-        prev_img_ids, prev_features = _get_img_ids_and_features()
-        matches = []
-        face_vectors = get_face_vectors(img_path, FACE_VECTORIZE_ALGORITHM)
-        if not face_vectors:
-            _update_img_status(img_id, error_msg="No faces found in image")
+    _add_entry_to_session(Image, session, img_id=img_id)
+    matches = []
+    for face_vector in face_vectors:
+        _store_face_vector(face_vector, img_id, session)
 
-        for face_vector in face_vectors:
-            _process_feature_mapping(face_vector, img_id, session)
-            distances = _compute_distances(prev_features, face_vector)
-            for that_img_id, distance in zip(prev_img_ids, distances):
-                if img_id == that_img_id:
-                    continue
-                distance = float(distance)
-                if distance >= DISTANCE_SCORE_THRESHOLD:
-                    continue
-                _prepare_matches(matches, that_img_id, distance)
+        distances = _compute_distances(prev_face_vectors, face_vector)
+        for that_img_id, distance in zip(prev_img_ids, distances):
+            if img_id == that_img_id:
+                continue
+            distance = float(distance)
+            if distance >= DISTANCE_SCORE_THRESHOLD:
+                continue
+            _prepare_matches(matches, that_img_id, distance)
 
-        for match in matches:
-            _process_matches(img_id, match["that_img_id"],
-                             match["distance_score"], session)
-    else:
-        _update_img_status(img_id, error_msg="Image processed before uploaded")
-    _update_img_status(img_id, status=ImageStatusEnum.finished_processing)
+    logger.info('Found %d face matches for image %s', len(matches), img_id)
+    for match in matches:
+        _store_matches(img_id, match["that_img_id"],
+                       match["distance_score"], session)
+
     db.safe_commit(session)
+    _update_img_status(img_id,
+                       status=ImageStatusEnum.finished_processing,
+                       error_msg=('No faces found in image'
+                                  if not face_vectors else None))
     delete_image(img_id)
 
-
-def begin_pipeline():
-    logger.debug('pipeline began')
-    qp = QueuePoll(IMAGE_PROCESSOR_QUEUE)
-    for message in qp.poll():
-        _handle_message_from_queue(message.content)
-        logger.debug("polling next iteration")
+    processing_time = (datetime.utcnow() - start).total_seconds()
+    logger.info('Processed image %s in %d seconds', img_id, processing_time)
