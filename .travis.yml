@@ -8,17 +8,16 @@ jobs:
 
   - name: PyLint
     stage: lint
-    script: make pylint
+    script: make pylint clean
 
   - name: Flake8
     stage: lint
-    script: make flake8
+    script: make flake8 clean
 
   - name: Tests
     stage: test
-    script: make test || true
+    script: make test clean || true
     before_script: docker pull cwolff/face_recognition
-    after_script: make clean
 
 stages:
 - lint
