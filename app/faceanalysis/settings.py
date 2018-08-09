@@ -7,6 +7,9 @@ LOGGING_LEVEL = environ.get('LOGGING_LEVEL', 'WARNING')
 MOUNTED_DATA_DIR = environ.get('MOUNTED_DATA_DIR')
 HOST_DATA_DIR = environ.get('HOST_DATA_DIR')
 
+IMAGE_PROCESSOR_CONCURRENCY = int(environ.get(
+    'IMAGE_PROCESSOR_CONCURRENCY',
+    '3'))
 IMAGE_PROCESSOR_QUEUE = environ.get('IMAGE_PROCESSOR_QUEUE', 'faceanalysis')
 CELERY_BROKER = 'pyamqp://{user}:{password}@{host}'.format(
     user=environ.get('RABBITMQ_USER', 'guest'),
