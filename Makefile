@@ -19,8 +19,9 @@ lint: pylint flake8
 test: build-dev
 	$(eval data_dir := $(shell mktemp -d))
 	$(eval db_dir := $(shell mktemp -d))
-	$(eval queue := $(shell echo "faceanalysis$$RANDOM"))
-	DATA_DIR="$(data_dir)" DB_DIR="$(db_dir)" IMAGE_PROCESSOR_QUEUE="$(queue)" \
+	$(eval queue_name := $(shell echo "faceanalysisq$$RANDOM"))
+	$(eval db_name := $(shell echo "faceanalysisdb$$RANDOM"))
+	DATA_DIR="$(data_dir)" DB_DIR="$(db_dir)" IMAGE_PROCESSOR_QUEUE="$(queue_name)" MYSQL_DATABASE="$(db_name)" \
     docker-compose run --rm api nose2 -v; \
     exit_code=$$?; \
     docker-compose down; \
