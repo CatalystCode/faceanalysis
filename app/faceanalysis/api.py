@@ -18,6 +18,14 @@ app.url_map.strict_slashes = False
 api = Api(app)
 basic_auth = HTTPBasicAuth()
 
+ERROR_USER_ALREADY_REGISTERED = 'User already registered'
+ERROR_IMAGE_ALREADY_PROCESSED = 'Image previously placed on queue'
+ERROR_IMAGE_DOES_NOT_EXIST = 'Image not yet uploaded'
+ERROR_BAD_IMAGE_FORMAT = ('Image upload failed: please use one of the '
+                          'following extensions --> {}'
+                          .format(ALLOWED_EXTENSIONS))
+ERROR_DUPLICATE_IMAGE = 'Image upload failed: image previously uploaded'
+
 
 # pylint: disable=no-self-use
 class AuthenticationToken(Resource):
@@ -44,7 +52,7 @@ class RegisterUser(Resource):
         try:
             username = auth.register_user(username, password)
         except auth.DuplicateUser:
-            return {'error_msg': 'User already registered'},\
+            return {'error_msg': ERROR_USER_ALREADY_REGISTERED},\
                    HTTPStatus.BAD_REQUEST.value
 
         return {'username': username}, HTTPStatus.CREATED.value
@@ -64,10 +72,10 @@ class ProcessImg(Resource):
         try:
             domain.process_image(img_id)
         except domain.ImageAlreadyProcessed:
-            return {'error_msg': 'Image previously placed on queue'},\
+            return {'error_msg': ERROR_IMAGE_ALREADY_PROCESSED},\
                     HTTPStatus.BAD_REQUEST.value
         except domain.ImageDoesNotExist:
-            return {'error_msg': 'Image not yet uploaded'},\
+            return {'error_msg': ERROR_IMAGE_DOES_NOT_EXIST},\
                    HTTPStatus.BAD_REQUEST.value
 
         return {'img_id': img_id}
@@ -76,7 +84,7 @@ class ProcessImg(Resource):
         try:
             status, error = domain.get_processing_status(img_id)
         except domain.ImageDoesNotExist:
-            return {'error_msg': 'Image not yet uploaded'},\
+            return {'error_msg': ERROR_IMAGE_DOES_NOT_EXIST},\
                    HTTPStatus.BAD_REQUEST.value
 
         return {'status': status, 'error_msg': error}
@@ -97,16 +105,13 @@ class ImgUpload(Resource):
         filename = secure_filename(image.filename)
 
         if not any(filename.endswith(ext) for ext in ALLOWED_EXTENSIONS):
-            return {'error_msg': ('Image upload failed: please use one of '
-                                  'the following extensions --> {}'
-                                  .format(ALLOWED_EXTENSIONS))},\
+            return {'error_msg': ERROR_BAD_IMAGE_FORMAT},\
                    HTTPStatus.BAD_REQUEST.value
 
         try:
             img_id = domain.upload_image(image.stream, filename)
         except domain.DuplicateImage:
-            return {'error_msg': ('Image upload failed: image previously '
-                                  'uploaded')},\
+            return {'error_msg': ERROR_DUPLICATE_IMAGE},\
                     HTTPStatus.BAD_REQUEST.value
 
         return {'img_id': img_id}
