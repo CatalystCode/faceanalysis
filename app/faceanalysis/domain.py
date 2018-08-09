@@ -1,4 +1,4 @@
-from faceanalysis import pipeline
+from faceanalysis import tasks
 from faceanalysis.log import get_logger
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
@@ -40,7 +40,7 @@ def process_image(img_id):
     if img_status.status != ImageStatusEnum.uploaded.name:
         raise ImageAlreadyProcessed()
 
-    pipeline.process_image.delay(img_id)
+    tasks.process_image.delay(img_id)
     logger.debug('Image %s queued for processing', img_id)
 
 
@@ -79,6 +79,8 @@ def upload_image(stream, filename):
     session.add(img_status)
     db.safe_commit(session)
     logger.debug('Image %s uploaded', img_id)
+
+    return img_id
 
 
 def list_images():

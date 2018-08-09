@@ -1,7 +1,7 @@
-from faceanalysis.pipeline import celery
 from faceanalysis.settings import IMAGE_PROCESSOR_CONCURRENCY
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
 from faceanalysis.settings import LOGGING_LEVEL
+from faceanalysis.tasks import celery
 
 if __name__ == '__main__':
     celery.worker_main([

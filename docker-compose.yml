@@ -39,6 +39,7 @@ services:
       LOGGING_LEVEL: ${LOGGING_LEVEL}
       ALLOWED_IMAGE_FILE_EXTENSIONS: ${ALLOWED_IMAGE_FILE_EXTENSIONS}
       IMAGE_PROCESSOR_QUEUE: ${IMAGE_PROCESSOR_QUEUE}
+      DOCKER_DAEMON: ${DOCKER_DAEMON}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
@@ -84,6 +85,11 @@ services:
   rabbitmq:
     restart: always
     image: rabbitmq:3.7.7-management
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}

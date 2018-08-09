@@ -43,3 +43,5 @@ STORAGE_PROVIDER = environ.get('STORAGE_PROVIDER', 'LOCAL')
 STORAGE_KEY = environ.get('STORAGE_KEY', dirname(abspath(__file__)))
 STORAGE_SECRET = environ.get('STORAGE_SECRET', '')
 STORAGE_CONTAINER = environ.get('STORAGE_CONTAINER', 'images')
+
+DOCKER_DAEMON = environ.get('DOCKER_DAEMON', 'unix://var/run/docker.sock')
