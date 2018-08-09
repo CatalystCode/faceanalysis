@@ -9,12 +9,12 @@ from time import sleep
 from unittest import TestCase
 
 from faceanalysis.api import app
-from faceanalysis.pipeline import celery
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import delete_models
 from faceanalysis.models.models import init_models
 from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.tasks import celery
 
 TEST_IMAGES_ROOT = join(abspath(dirname(__file__)), 'images')
 API_VERSION = '/api/v1'

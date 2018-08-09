@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import numpy as np
-from celery import Celery
 
 from faceanalysis.face_vectorizer import face_vector_from_text
 from faceanalysis.face_vectorizer import face_vector_to_text
@@ -15,16 +14,12 @@ from faceanalysis.models.models import ImageStatus
 from faceanalysis.models.models import Match
 from faceanalysis.settings import DISTANCE_SCORE_THRESHOLD
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
-from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
-from faceanalysis.settings import CELERY_BROKER
 from faceanalysis.storage import StorageError
 from faceanalysis.storage import delete_image
 from faceanalysis.storage import get_image_path
 
 db = get_database_manager()
 logger = get_logger(__name__)
-celery = Celery('pipeline', broker=CELERY_BROKER)
-celery.conf.task_default_queue = IMAGE_PROCESSOR_QUEUE
 
 
 def _add_entry_to_session(cls, session, **kwargs):
@@ -99,14 +94,13 @@ def _update_img_status(img_id, status=None, error_msg=None):
 # pylint: disable=len-as-condition
 def _compute_distances(face_encodings, face_to_compare):
     if len(face_encodings) == 0:
-        return np.empty((0))
+        return np.empty(0)
 
     face_to_compare = np.array(face_to_compare)
     return np.linalg.norm(face_encodings - face_to_compare, axis=1)
 # pylint: enable=len-as-condition
 
 
-@celery.task(ignore_result=True)
 def process_image(img_id):
     logger.info('Processing image %s', img_id)
     try:
