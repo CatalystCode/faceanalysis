@@ -3,9 +3,22 @@ language: generic
 services:
 - docker
 
-before_install:
-- openssl aes-256-cbc -K $encrypted_e08e3836e1cc_key -iv $encrypted_e08e3836e1cc_iv
-  -in ./.travis/secrets.env.enc -out ./secrets.env -d
+jobs:
+  include:
 
-script:
-- ./run-test.sh
+  - name: PyLint
+    stage: lint
+    script: make pylint
+
+  - name: Flake8
+    stage: lint
+    script: make flake8
+
+  - name: Tests
+    stage: test
+    script: make test || true
+    after_script: make clean
+
+stages:
+- lint
+- test

@@ -8,8 +8,8 @@ See [here](./algorithms/README.md).
 1. Create an Azure VM (preferably Ubuntu 16.04)
 2. Install Docker and Docker Compose
 3. Clone this repo
-4. Replace default configuration values in `.env` and `secrets.env`
-5. To run tests type './run-test.sh' from within the top level directory
+4. Replace default configuration values in `.env`
+5. To run tests type `make test clean` from within the top level directory
 6. To run in production type './run-prod.sh' from within the top level directory
 7. If you would like to clear the production database, run './delete-prod-data.sh'
 - Each time you run in production, **you most likely do not want to delete the production database**. Therefore, when you run './run-prod.sh', the previous database will not be deleted. You have the option to manually delete it by running './delete-prod-data.sh'
