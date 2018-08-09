@@ -1,9 +1,10 @@
 import json
 import os
 
-import docker
+from docker import DockerClient
 
 from faceanalysis.log import get_logger
+from faceanalysis.settings import DOCKER_DAEMON
 from faceanalysis.settings import HOST_DATA_DIR
 from faceanalysis.settings import MOUNTED_DATA_DIR
 
@@ -33,7 +34,7 @@ def get_face_vectors(img_path, algorithm):
     volumes = {img_host: {'bind': img_mount, 'mode': 'ro'}}
 
     logger.debug('Running container %s with image %s', algorithm, img_host)
-    client = docker.from_env()
+    client = DockerClient(base_url=DOCKER_DAEMON)
     stdout = client.containers.run(algorithm, img_mount,
                                    volumes=volumes, auto_remove=True)
 
