@@ -187,17 +187,17 @@ class ApiTestCase(TestCase):
         self._test_end_to_end_with_matching_imgs(fnames)
 
     def test_network_outages(self):
-        pass
+        self.skipTest('Not implemented')
 
     def test_queue_failures(self):
-        pass
+        self.skipTest('Not implemented')
 
     def test_upload_file_not_allowed(self):
         fname = '0.txt'
         self._upload_img(fname, HTTPStatus.BAD_REQUEST.value)
 
     def test_upload_arbitrarily_large_file(self):
-        pass
+        self.skipTest('Not implemented')
 
 
 def _get_basic_auth_headers(username_or_token, password):
