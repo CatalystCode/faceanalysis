@@ -32,18 +32,15 @@ def process_image(img_id):
     img_status = session.query(ImageStatus)\
         .filter(ImageStatus.img_id == img_id)\
         .first()
+    session.close()
 
     if img_status is None:
-        session.close()
         raise ImageDoesNotExist()
 
     if img_status.status != ImageStatusEnum.uploaded.name:
-        session.close()
         raise ImageAlreadyProcessed()
 
     pipeline.process_image.delay(img_id)
-    img_status.status = ImageStatusEnum.on_queue.name
-    db.safe_commit(session)
     logger.debug('Image %s queued for processing', img_id)
 
 
