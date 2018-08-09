@@ -9,13 +9,12 @@ from unittest import TestCase
 import json
 
 from faceanalysis.api import app
+from faceanalysis.pipeline import celery
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import delete_models
 from faceanalysis.models.models import init_models
-from faceanalysis.queue_poll import create_queue_service
 from faceanalysis.settings import ALLOWED_EXTENSIONS
-from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
 
 TEST_IMAGES_ROOT = join(abspath(dirname(__file__)), 'images')
 API_VERSION = '/api/v1'
@@ -39,8 +38,7 @@ class ApiTestCase(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
-        queue_service.delete_queue(IMAGE_PROCESSOR_QUEUE)
+        celery.control.purge()
 
     def _register_default_user(self,
                                username,
@@ -130,7 +128,7 @@ class ApiTestCase(TestCase):
         for img_id in img_ids:
             matches_response = self._get_matches(img_id)
             matches_data = json.loads(matches_response.get_data(as_text=True))
-            should_be_matches = img_ids - set([img_id])
+            should_be_matches = img_ids - {img_id}
             self.assertTrue(should_be_matches.issubset(
                 set(matches_data['imgs'])))
             self.assertNotIn(img_id, matches_data['imgs'])

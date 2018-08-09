@@ -1,14 +1,12 @@
+from faceanalysis import pipeline
 from faceanalysis.log import get_logger
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import Image
 from faceanalysis.models.models import ImageStatus
 from faceanalysis.models.models import Match
-from faceanalysis.queue_poll import create_queue_service
-from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
 from faceanalysis.storage import store_image
 
-queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
 logger = get_logger(__name__)
 
 
@@ -43,7 +41,7 @@ def process_image(img_id):
         session.close()
         raise ImageAlreadyProcessed()
 
-    queue_service.put_message(IMAGE_PROCESSOR_QUEUE, img_id)
+    pipeline.process_image.delay(img_id)
     img_status.status = ImageStatusEnum.on_queue.name
     db.safe_commit(session)
     logger.debug('Image %s queued for processing', img_id)

@@ -1,9 +1,10 @@
-from faceanalysis.models.database_manager import get_database_manager
-from faceanalysis.models.models import init_models
-from faceanalysis.pipeline import begin_pipeline
+from faceanalysis.pipeline import celery
+from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
+from faceanalysis.settings import LOGGING_LEVEL
 
-if __name__ == "__main__":
-    db = get_database_manager()
-    init_models(db.engine)
-    begin_pipeline()
-    db.close_engine()
+if __name__ == '__main__':
+    celery.worker_main([
+        '--queues={}'.format(IMAGE_PROCESSOR_QUEUE),
+        '--loglevel={}'.format(LOGGING_LEVEL),
+        '-Ofair',
+        '--concurrency=1'])

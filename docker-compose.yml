@@ -24,6 +24,7 @@ services:
     command: ["python3", "worker.py"]
     depends_on:
       - mysql
+      - rabbitmq
     logging:
       driver: "json-file"
       options:
@@ -38,14 +39,15 @@ services:
       LOGGING_LEVEL: ${LOGGING_LEVEL}
       ALLOWED_IMAGE_FILE_EXTENSIONS: ${ALLOWED_IMAGE_FILE_EXTENSIONS}
       IMAGE_PROCESSOR_QUEUE: ${IMAGE_PROCESSOR_QUEUE}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       MYSQL_HOST: mysql
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       DISTANCE_SCORE_THRESHOLD: ${DISTANCE_SCORE_THRESHOLD}
       FACE_VECTORIZE_ALGORITHM: ${FACE_VECTORIZE_ALGORITHM}
-    env_file:
-      - ./secrets.env
 
   api:
     restart: always
@@ -57,6 +59,7 @@ services:
     depends_on:
       - worker
       - mysql
+      - rabbitmq
     logging:
       driver: "json-file"
       options:
@@ -68,14 +71,24 @@ services:
       LOGGING_LEVEL: ${LOGGING_LEVEL}
       ALLOWED_IMAGE_FILE_EXTENSIONS: ${ALLOWED_IMAGE_FILE_EXTENSIONS}
       IMAGE_PROCESSOR_QUEUE: ${IMAGE_PROCESSOR_QUEUE}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       MYSQL_HOST: mysql
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       TOKEN_SECRET_KEY: ${TOKEN_SECRET_KEY}
       DEFAULT_TOKEN_EXPIRATION_SECS: ${DEFAULT_TOKEN_EXPIRATION_SECS}
-    env_file:
-      - ./secrets.env
+
+  rabbitmq:
+    restart: always
+    image: rabbitmq:3.7.7-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - 15672:15672
 
   mysql:
     restart: always

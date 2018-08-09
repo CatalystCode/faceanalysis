@@ -1,4 +1,5 @@
 import numpy as np
+from celery import Celery
 
 from faceanalysis.face_vectorizer import face_vector_from_text
 from faceanalysis.face_vectorizer import face_vector_to_text
@@ -10,16 +11,18 @@ from faceanalysis.models.models import FeatureMapping
 from faceanalysis.models.models import Image
 from faceanalysis.models.models import ImageStatus
 from faceanalysis.models.models import Match
-from faceanalysis.queue_poll import QueuePoll
 from faceanalysis.settings import DISTANCE_SCORE_THRESHOLD
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
+from faceanalysis.settings import CELERY_BROKER
 from faceanalysis.storage import StorageError
 from faceanalysis.storage import delete_image
 from faceanalysis.storage import get_image_path
 
 db = get_database_manager()
 logger = get_logger(__name__)
+celery = Celery('pipeline', broker=CELERY_BROKER)
+celery.conf.task_default_queue = IMAGE_PROCESSOR_QUEUE
 
 
 def _add_entry_to_session(cls, session, **kwargs):
@@ -121,7 +124,8 @@ def _compute_distances(face_encodings, face_to_compare):
 # pylint: enable=len-as-condition
 
 
-def _handle_message_from_queue(img_id):
+@celery.task(ignore_result=True, soft_time_limit=10 * 60)
+def process_image(img_id):
     if not _img_should_be_processed(img_id):
         return
 
@@ -155,11 +159,3 @@ def _handle_message_from_queue(img_id):
     _update_img_status(img_id, status=ImageStatusEnum.finished_processing)
     db.safe_commit(session)
     delete_image(img_id)
-
-
-def begin_pipeline():
-    logger.debug('pipeline began')
-    qp = QueuePoll(IMAGE_PROCESSOR_QUEUE)
-    for message in qp.poll():
-        _handle_message_from_queue(message.content)
-        logger.debug("polling next iteration")

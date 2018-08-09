@@ -7,9 +7,11 @@ LOGGING_LEVEL = environ.get('LOGGING_LEVEL', 'WARNING')
 MOUNTED_DATA_DIR = environ.get('MOUNTED_DATA_DIR')
 HOST_DATA_DIR = environ.get('HOST_DATA_DIR')
 
-STORAGE_ACCOUNT_NAME = environ['STORAGE_ACCOUNT_NAME']
-STORAGE_ACCOUNT_KEY = environ['STORAGE_ACCOUNT_KEY']
 IMAGE_PROCESSOR_QUEUE = environ.get('IMAGE_PROCESSOR_QUEUE', 'faceanalysis')
+CELERY_BROKER = 'pyamqp://{user}:{password}@{host}'.format(
+    user=environ.get('RABBITMQ_USER', 'guest'),
+    password=environ.get('RABBITMQ_PASSWORD', 'guest'),
+    host=environ['RABBITMQ_HOST'])
 
 ALLOWED_EXTENSIONS = set(
     environ.get('ALLOWED_IMAGE_FILE_EXTENSIONS', '')
