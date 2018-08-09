@@ -6,9 +6,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 RUN apt-get update && apt-get install -y ca-certificates
 
-COPY ./get_famous_people_photos/src /app/src
-COPY ./common/text_files /app/src
-COPY ./common/models /app/models
-WORKDIR /app/src
+COPY /src /app/get_famous_people_photos/src
+COPY ../common/text_files /app/common/text_files
+COPY ../common/models /app/common/models
+WORKDIR /app/get_famous_people_photos/src
 
 CMD ["python", "get_famous_people_photos.py"]
