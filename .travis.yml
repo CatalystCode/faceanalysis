@@ -16,7 +16,7 @@ jobs:
 
   - name: Tests
     stage: test
-    script: make test clean || true
+    script: make test clean
     before_script: docker pull cwolff/face_recognition
 
 stages:

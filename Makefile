@@ -21,5 +21,5 @@ test: build
 	APP_PORT="8080" DATA_DIR="$(data_dir)" DB_DIR="$(db_dir)" IMAGE_PROCESSOR_QUEUE="$(queue)" docker-compose run --rm api nose2 -v
 
 clean:
-	docker-compose down
-	rm -rf $(data_dir) $(db_dir)
+	docker-compose down || true
+	rm -rf $(data_dir) $(db_dir) || true
