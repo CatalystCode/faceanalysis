@@ -1,5 +1,7 @@
 # Custom ignore
 images/output
+.DS_Store
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -100,3 +102,5 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+
