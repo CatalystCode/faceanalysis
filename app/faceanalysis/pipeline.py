@@ -122,6 +122,7 @@ def process_image(img_id):
     prev_img_ids, prev_face_vectors = _load_image_ids_and_face_vectors()
     face_vectors = get_face_vectors(img_path, FACE_VECTORIZE_ALGORITHM)
     logger.info('Found %d faces in image %s', len(face_vectors), img_id)
+    _update_img_status(img_id, status=ImageStatusEnum.face_vector_computed)
 
     session = db.get_session()
     _add_entry_to_session(Image, session, img_id=img_id)
