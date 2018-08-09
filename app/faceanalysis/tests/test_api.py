@@ -88,7 +88,7 @@ class ApiTestCase(TestCase):
 
     def _wait_for_img_to_finish_processing(
             self, img_id, expected_status_code=HTTPStatus.OK.value,
-            wait_time=timedelta(minutes=3),
+            wait_time=timedelta(minutes=1),
             polling_interval=timedelta(seconds=5)):
 
         while wait_time.seconds > 0:
