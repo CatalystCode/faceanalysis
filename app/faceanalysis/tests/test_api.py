@@ -7,7 +7,6 @@ from os.path import dirname
 from os.path import join
 from time import sleep
 from unittest import TestCase
-import json
 
 from faceanalysis.api import app
 from faceanalysis.pipeline import celery
@@ -30,8 +29,7 @@ class ApiTestCase(TestCase):
         username = 'username'
         password = 'password'
         self._register_default_user(username, password)
-        token_response = self._get_token(username, password)
-        token = json.loads(token_response.get_data(as_text=True))['token']
+        token = self._get_token(username, password).get_json()['token']
         self.headers = _get_basic_auth_headers(token, 'any value')
 
     def tearDown(self):
@@ -100,8 +98,8 @@ class ApiTestCase(TestCase):
             self.assertEqual(response.status_code, expected_status_code)
             if expected_status_code == HTTPStatus.BAD_REQUEST.value:
                 return response
-            data = json.loads(response.get_data(as_text=True))
-            if data['status'] == ImageStatusEnum.finished_processing.name:
+            status = response.get_json()['status']
+            if status == ImageStatusEnum.finished_processing.name:
                 return response
 
             sleep(polling_interval.seconds)
@@ -119,17 +117,14 @@ class ApiTestCase(TestCase):
             self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
 
-        imgs_response = self._get_imgs()
-        imgs_data = json.loads(imgs_response.get_data(as_text=True))
-        self.assertTrue(img_ids.issubset(set(imgs_data['imgs'])))
+        imgs = self._get_imgs().get_json()['imgs']
+        self.assertTrue(img_ids.issubset(set(imgs)))
 
         for img_id in img_ids:
-            matches_response = self._get_matches(img_id)
-            matches_data = json.loads(matches_response.get_data(as_text=True))
+            imgs = self._get_matches(img_id).get_json()['imgs']
             should_be_matches = img_ids - {img_id}
-            self.assertTrue(should_be_matches.issubset(
-                set(matches_data['imgs'])))
-            self.assertNotIn(img_id, matches_data['imgs'])
+            self.assertTrue(should_be_matches.issubset(set(imgs)))
+            self.assertNotIn(img_id, imgs)
 
     def test_end_to_end_with_one_face_per_img_that_match(self):
         fnames = {'1.jpg', '2.jpg'}
@@ -150,9 +145,8 @@ class ApiTestCase(TestCase):
         self._process_img(img_id)
         self._wait_for_img_to_finish_processing(img_id)
 
-        imgs_response = self._get_imgs()
-        imgs_data = json.loads(imgs_response.get_data(as_text=True))
-        self.assertIn(img_id, imgs_data['imgs'])
+        imgs = self._get_imgs().get_json()['imgs']
+        self.assertIn(img_id, imgs)
 
     def test_processing_img_that_has_not_yet_been_uploaded(self):
         img_id_not_yet_uploaded = '100'
@@ -175,9 +169,8 @@ class ApiTestCase(TestCase):
             else:
                 self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
-            imgs_response = self._get_imgs()
-            imgs_data = json.loads(imgs_response.get_data(as_text=True))
-            self.assertIn(img_id, imgs_data['imgs'])
+            imgs = self._get_imgs().get_json()['imgs']
+            self.assertIn(img_id, imgs)
 
     def test_end_to_end_with_different_file_formats(self):
         # test jpg && png
