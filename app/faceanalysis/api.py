@@ -44,7 +44,8 @@ class RegisterUser(Resource):
         try:
             username = auth.register_user(username, password)
         except auth.DuplicateUser:
-            return 'User already registered', HTTPStatus.BAD_REQUEST.value
+            return {'error_msg': 'User already registered'},\
+                   HTTPStatus.BAD_REQUEST.value
 
         return {'username': username}, HTTPStatus.CREATED.value
 
@@ -63,18 +64,20 @@ class ProcessImg(Resource):
         try:
             domain.process_image(img_id)
         except domain.ImageAlreadyProcessed:
-            return ('Image previously placed on queue',
-                    HTTPStatus.BAD_REQUEST.value)
+            return {'error_msg': 'Image previously placed on queue'},\
+                    HTTPStatus.BAD_REQUEST.value
         except domain.ImageDoesNotExist:
-            return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
+            return {'error_msg': 'Image not yet uploaded'},\
+                   HTTPStatus.BAD_REQUEST.value
 
-        return 'OK', HTTPStatus.OK.value
+        return {'img_id': img_id}
 
     def get(self, img_id):
         try:
             status, error = domain.get_processing_status(img_id)
         except domain.ImageDoesNotExist:
-            return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
+            return {'error_msg': 'Image not yet uploaded'},\
+                   HTTPStatus.BAD_REQUEST.value
 
         return {'status': status, 'error_msg': error}
 
@@ -106,7 +109,7 @@ class ImgUpload(Resource):
                                   'uploaded')},\
                     HTTPStatus.BAD_REQUEST.value
 
-        return {'img_id': img_id}, HTTPStatus.OK.value
+        return {'img_id': img_id}
 
 
 class ImgMatchList(Resource):
