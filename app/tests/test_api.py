@@ -39,14 +39,11 @@ class ApiTestCase(TestCase):
     def tearDownClass(cls):
         celery.control.purge()
 
-    def _register_default_user(self,
-                               username,
-                               password,
-                               expected_status_code=HTTPStatus.CREATED.value):
-        data = {'username': username,
-                'password': password}
+    def _register_default_user(self, username, password,
+                               expected_status_code=HTTPStatus.CREATED):
+        data = {'username': username, 'password': password}
         response = self.app.post(API_VERSION + '/register_user', data=data)
-        self.assertEqual(response.status_code, expected_status_code)
+        self.assertEqual(response.status_code, expected_status_code.value)
         ApiTestCase.has_registered_user = True
         return response
 
@@ -57,46 +54,46 @@ class ApiTestCase(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK.value)
         return response
 
-    def _upload_img(self, fname, expected_status_code=HTTPStatus.OK.value):
+    def _upload_img(self, fname, expected_status_code=HTTPStatus.OK):
         data = {'image': _load_test_image(fname)}
         response = self.app.post(API_VERSION + '/upload_image',
                                  content_type='multipart/form-data',
                                  data=data,
                                  headers=self.headers)
-        self.assertEqual(response.status_code, expected_status_code)
-        return response
+        self.assertEqual(response.status_code, expected_status_code.value)
 
-    def _process_img(self, img_id, expected_status_code=HTTPStatus.OK.value):
+        return response.get_json().get('img_id')
+
+    def _process_img(self, img_id, expected_status_code=HTTPStatus.OK):
         data = {'img_id': img_id}
         response = self.app.post(API_VERSION + '/process_image',
                                  data=data,
                                  headers=self.headers)
-        self.assertEqual(response.status_code, expected_status_code)
+        self.assertEqual(response.status_code, expected_status_code.value)
         return response
 
-    def _get_imgs(self, expected_status_code=HTTPStatus.OK.value):
+    def _get_imgs(self, expected_status_code=HTTPStatus.OK):
         response = self.app.get(API_VERSION + '/images/',
                                 headers=self.headers)
-        self.assertEqual(response.status_code, expected_status_code)
+        self.assertEqual(response.status_code, expected_status_code.value)
         return response
 
-    def _get_matches(self, img_id, expected_status_code=HTTPStatus.OK.value):
+    def _get_matches(self, img_id, expected_status_code=HTTPStatus.OK):
         response = self.app.get(API_VERSION + '/image_matches/' + img_id,
                                 headers=self.headers)
-        self.assertEqual(response.status_code, expected_status_code)
+        self.assertEqual(response.status_code, expected_status_code.value)
         return response
 
     def _wait_for_img_to_finish_processing(
-            self, img_id, expected_status_code=HTTPStatus.OK.value,
+            self, img_id, expected_status_code=HTTPStatus.OK,
             wait_time=timedelta(minutes=1),
             polling_interval=timedelta(seconds=5)):
 
         while wait_time.seconds > 0:
-            rel_path = '/process_image/'
-            response = self.app.get(API_VERSION + rel_path + img_id,
+            response = self.app.get(API_VERSION + '/process_image/' + img_id,
                                     headers=self.headers)
-            self.assertEqual(response.status_code, expected_status_code)
-            if expected_status_code == HTTPStatus.BAD_REQUEST.value:
+            self.assertEqual(response.status_code, expected_status_code.value)
+            if expected_status_code == HTTPStatus.BAD_REQUEST:
                 return response
             status = response.get_json()['status']
             if status == ImageStatusEnum.finished_processing.name:
@@ -110,10 +107,8 @@ class ApiTestCase(TestCase):
     def _test_end_to_end_with_matching_imgs(self, fnames):
         img_ids = set()
         for fname in fnames:
-            index_of_period = fname.find('.')
-            img_id = fname[:index_of_period]
+            img_id = self._upload_img(fname)
             img_ids.add(img_id)
-            self._upload_img(fname)
             self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
 
@@ -140,8 +135,7 @@ class ApiTestCase(TestCase):
 
     def test_upload_and_process_img_without_face(self):
         fname = '9.jpg'
-        img_id = fname[0]
-        self._upload_img(fname)
+        img_id = self._upload_img(fname)
         self._process_img(img_id)
         self._wait_for_img_to_finish_processing(img_id)
 
@@ -151,21 +145,21 @@ class ApiTestCase(TestCase):
     def test_processing_img_that_has_not_yet_been_uploaded(self):
         img_id_not_yet_uploaded = '100'
         self._process_img(img_id_not_yet_uploaded,
-                          expected_status_code=HTTPStatus.BAD_REQUEST.value)
+                          expected_status_code=HTTPStatus.BAD_REQUEST)
 
     def test_upload_twice(self):
         fname = '4.jpg'
         self._upload_img(fname)
-        self._upload_img(fname, HTTPStatus.BAD_REQUEST.value)
+        self._upload_img(fname, expected_status_code=HTTPStatus.BAD_REQUEST)
 
     def test_upload_and_process_twice(self):
         fname = '5.jpg'
-        img_id = fname[0]
 
-        self._upload_img(fname)
+        img_id = self._upload_img(fname)
         for i, fname in enumerate([fname, fname]):
             if i == 1:
-                self._process_img(img_id, HTTPStatus.BAD_REQUEST.value)
+                self._process_img(img_id,
+                                  expected_status_code=HTTPStatus.BAD_REQUEST)
             else:
                 self._process_img(img_id)
             self._wait_for_img_to_finish_processing(img_id)
@@ -187,7 +181,7 @@ class ApiTestCase(TestCase):
 
     def test_upload_file_not_allowed(self):
         fname = '0.txt'
-        self._upload_img(fname, HTTPStatus.BAD_REQUEST.value)
+        self._upload_img(fname, expected_status_code=HTTPStatus.BAD_REQUEST)
 
     def test_upload_arbitrarily_large_file(self):
         self.skipTest('Not implemented')

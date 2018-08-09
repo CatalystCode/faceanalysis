@@ -94,17 +94,19 @@ class ImgUpload(Resource):
         filename = secure_filename(image.filename)
 
         if not any(filename.endswith(ext) for ext in ALLOWED_EXTENSIONS):
-            return ('Image upload failed: please use one of the '
-                    'following extensions --> {}'
-                    .format(ALLOWED_EXTENSIONS)), HTTPStatus.BAD_REQUEST.value
+            return {'error_msg': ('Image upload failed: please use one of '
+                                  'the following extensions --> {}'
+                                  .format(ALLOWED_EXTENSIONS))},\
+                   HTTPStatus.BAD_REQUEST.value
 
         try:
-            domain.upload_image(image.stream, filename)
+            img_id = domain.upload_image(image.stream, filename)
         except domain.DuplicateImage:
-            return ('Image upload failed: image previously uploaded',
-                    HTTPStatus.BAD_REQUEST.value)
+            return {'error_msg': ('Image upload failed: image previously '
+                                  'uploaded')},\
+                    HTTPStatus.BAD_REQUEST.value
 
-        return 'OK', HTTPStatus.OK.value
+        return {'img_id': img_id}, HTTPStatus.OK.value
 
 
 class ImgMatchList(Resource):

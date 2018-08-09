@@ -80,6 +80,8 @@ def upload_image(stream, filename):
     db.safe_commit(session)
     logger.debug('Image %s uploaded', img_id)
 
+    return img_id
+
 
 def list_images():
     db = get_database_manager()
