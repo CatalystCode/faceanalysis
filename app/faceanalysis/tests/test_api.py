@@ -1,4 +1,5 @@
 from base64 import b64encode
+from datetime import timedelta
 from http import HTTPStatus
 from io import BytesIO
 from os.path import abspath
@@ -89,12 +90,10 @@ class ApiTestCase(TestCase):
 
     def _wait_for_img_to_finish_processing(
             self, img_id, expected_status_code=HTTPStatus.OK.value,
-            max_wait_time_seconds=300):
+            wait_time=timedelta(minutes=3),
+            polling_interval=timedelta(seconds=5)):
 
-        total_wait_time_seconds = 0
-        polling_interval_seconds = 5
-
-        while total_wait_time_seconds < max_wait_time_seconds:
+        while wait_time.seconds > 0:
             rel_path = '/process_image/'
             response = self.app.get(API_VERSION + rel_path + img_id,
                                     headers=self.headers)
@@ -105,11 +104,10 @@ class ApiTestCase(TestCase):
             if data['status'] == ImageStatusEnum.finished_processing.name:
                 return response
 
-            sleep(polling_interval_seconds)
-            total_wait_time_seconds += polling_interval_seconds
+            sleep(polling_interval.seconds)
+            wait_time -= polling_interval
 
-        self.fail('Waited for more than {} seconds for image {}'
-                  .format(max_wait_time_seconds, img_id))
+        self.fail('Waited too long for image {}'.format(img_id))
 
     def _test_end_to_end_with_matching_imgs(self, fnames):
         img_ids = set()
