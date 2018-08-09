@@ -5,23 +5,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 from faceanalysis.log import get_logger
-from faceanalysis.settings import MYSQL_DATABASE
-from faceanalysis.settings import MYSQL_HOST
-from faceanalysis.settings import MYSQL_PASSWORD
-from faceanalysis.settings import MYSQL_USER
+from faceanalysis.settings import SQLALCHEMY_CONNECTION_STRING
 
 
 class DatabaseManager:
     def __init__(self):
-        mysql_connector_str = 'mysql+mysqlconnector'
-        mysql_port = '3306'
-        engine_credential = "{}://{}:{}@{}:{}/{}".format(mysql_connector_str,
-                                                         MYSQL_USER,
-                                                         MYSQL_PASSWORD,
-                                                         MYSQL_HOST,
-                                                         mysql_port,
-                                                         MYSQL_DATABASE)
-        self.engine = create_engine(engine_credential,
+        self.engine = create_engine(SQLALCHEMY_CONNECTION_STRING,
                                     pool_recycle=3600)
 
         self.session_factory = sessionmaker(bind=self.engine)

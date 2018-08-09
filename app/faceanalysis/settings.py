@@ -29,10 +29,12 @@ TOKEN_EXPIRATION = int(environ.get(
     'DEFAULT_TOKEN_EXPIRATION_SECS',
     '500'))
 
-MYSQL_USER = environ['MYSQL_USER']
-MYSQL_PASSWORD = environ['MYSQL_PASSWORD']
-MYSQL_HOST = environ['MYSQL_HOST']
-MYSQL_DATABASE = environ['MYSQL_DATABASE']
+SQLALCHEMY_CONNECTION_STRING = (
+    'mysql+mysqlconnector://{user}:{password}@{host}:3306/{database}'
+    .format(user=environ['MYSQL_USER'],
+            password=environ['MYSQL_PASSWORD'],
+            host=environ['MYSQL_HOST'],
+            database=environ['MYSQL_DATABASE']))
 
 STORAGE_PROVIDER = environ.get('STORAGE_PROVIDER', 'LOCAL')
 STORAGE_KEY = environ.get('STORAGE_KEY', dirname(abspath(__file__)))
