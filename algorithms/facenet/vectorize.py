@@ -13,7 +13,7 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 
 def get_face_vectors(img_path: str) -> List[List[float]]:
     identifier = identifier = face.Identifier(
-        threshold=1.0, facenet_model_checkpoint='20180402-114759.pb')
+        facenet_model_checkpoint='20180402-114759.pb')
     image: np.ndarray = identifier.get_image_from_path(img_path)
     vectors: List[np.ndarray] = identifier.vectorize(image)
     return [vector.tolist() for vector in vectors]
