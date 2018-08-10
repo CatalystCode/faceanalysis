@@ -14,8 +14,8 @@ The container is expected output the following JSON structure to stdout:
 
 ```js
 {
-  "faceVectors": {
-    "/data/image1.jpg": [
+  "faceVectors": [
+    [
       [0, 1, 2, 3],  // face vector for the first person in the first image
                      // ...
       [4, 5, 6, 7]   // face vector for the last person in the first image
@@ -23,11 +23,11 @@ The container is expected output the following JSON structure to stdout:
                      //
                      // ...
                      //
-    "/data/imageN.jpg": [
+    [
       [3, 2, 1, 0],  // face vector for the first person in the Nth image
                      // ...
       [7, 6, 5, 4]   // face vector for the last person in the Nth image
     ]
-  }
+  ]
 }
 ```

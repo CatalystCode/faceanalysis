@@ -29,8 +29,7 @@ def _cli():
         image_paths.append(image.name)
 
     # naive implementation for demo purposes, could also batch process images
-    vectors = {image_path: get_face_vectors(image_path)
-               for image_path in image_paths}
+    vectors = [get_face_vectors(image_path) for image_path in image_paths]
 
     print(json.dumps({'faceVectors': vectors}))
 
