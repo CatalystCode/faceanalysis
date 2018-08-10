@@ -28,7 +28,7 @@ from PIL import Image
 from requests import exceptions
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-BING_API_KEY = str(getenv('BING_API_KEY', 'c8e183c6cf57419bb0c0ee885b76bbe5'))
+BING_API_KEY = str(getenv('BING_API_KEY', ''))
 NUM_THREADS = int(getenv('NUM_THREADS', 50))
 NUM_PROCESSES = min(int(getenv('NUM_PROCESSES', 4)), os.cpu_count())
 MAX_RESULTS = 150
@@ -83,7 +83,8 @@ def get_photos(famous_people_file: str):
     timer.finish()
 
 
-def fetch_urls_multithread(unique_people: Set[str], total_count: int) -> (List[List[str]], List[str]):
+def fetch_urls_multithread(
+        unique_people: Set[str], total_count: int) -> (List[List[str]], List[str]):
     print("[INFO] Fetching image urls with {} threads".format(NUM_THREADS))
     global timer
     widgets_urls = ['Fetching urls: ', pb.Percentage(), ' ',
@@ -108,7 +109,12 @@ def fetch_urls_multithread(unique_people: Set[str], total_count: int) -> (List[L
     return urls, people
 
 
-def multiprocess(function: any, all_urls: List[List[str]], people: List[str], total_count: int, info: str) -> (List[List[str]], List[str]):
+def multiprocess(function: any,
+                 all_urls: List[List[str]],
+                 people: List[str],
+                 total_count: int,
+                 info: str) -> (List[List[str]],
+                                List[str]):
     print("[INFO] {} with {} processes".format(info, NUM_PROCESSES))
     global timer
     widgets_match = ['{}: '.format(info), pb.Percentage(), ' ',
@@ -136,7 +142,7 @@ def get_urls(person: str) -> (List[str], str):
     search.raise_for_status()
     results = search.json()
     thumbnail_urls = [img["thumbnailUrl"] +
-                    '&c=7&w=250&h=250' for img in results["value"]]
+                      '&c=7&w=250&h=250' for img in results["value"]]
     # update counter
     increment()
     timer.update(int(counter.value))
@@ -160,12 +166,14 @@ def match_images(thumbnail_urls: List[str], person: str) -> (List[str], str):
             identifier = face.Identifier(
                 threshold=1.0, facenet_model_checkpoint=facenet_model_checkpoint)
             images = map(identifier.download_image, thumbnail_urls)
-            all_faces: Generator[List[face.Face], None, None] = identifier.detect_encode_all(images, urls=thumbnail_urls, save_memory=True)
-            # Flattens the lists of faces into one generator 
+            all_faces: Generator[List[face.Face], None, None] = identifier.detect_encode_all(
+                images, urls=thumbnail_urls, save_memory=True)
+            # Flattens the lists of faces into one generator
             faces = (face for faces in all_faces for face in faces)
             # import pdb;pdb.set_trace()
             anchor_embedding = list(islice(faces, 1))[0].embedding
-            # Assume first image is of the right person and check other images are of the same person
+            # Assume first image is of the right person and check other images
+            # are of the same person
             for other in faces:
                 is_match, distance = identifier.compare_embedding(
                     anchor_embedding, other.embedding)
@@ -194,7 +202,8 @@ def dedupe_images(matched_urls: List[str], person: str) -> (List[str], str):
     image_hashes = [IMAGE_HASH(url_to_img_hash(url), url)
                     for url in matched_urls]
     tree = pybktree.BKTree(image_distance, image_hashes)
-    # this makes images saved in order of similarity so we can spot duplicates easier
+    # this makes images saved in order of similarity so we can spot duplicates
+    # easier
     sorted_image_hashes = sorted(tree)
     to_discard = []
     urls_to_keep = set()
@@ -253,10 +262,10 @@ def url_to_image(url: str) -> np.ndarray:
 
 def url_to_img_hash(url: str) -> int:
     """Converts a url to an image hash
-    
+
     Arguments:
         url {str} -- url to image
-    
+
     Returns:
         int -- hash of image
     """
@@ -268,11 +277,11 @@ def url_to_img_hash(url: str) -> int:
 
 def image_distance(x: IMAGE_HASH, y: IMAGE_HASH) -> int:
     """Calculates the distance between to image hashes
-    
+
     Arguments:
         x {IMAGE_HASH} -- IMAGE_HASH object for image 1
         y {IMAGE_HASH} -- IMAGE_HASH object for image 2
-    
+
     Returns:
         int -- hamming distance of two image hashes
     """
