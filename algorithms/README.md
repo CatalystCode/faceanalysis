@@ -10,6 +10,12 @@ The algorithm container will be called like so:
 docker run -v /path/to/images:/data the_algorithm_container /data/image1.jpg ... /data/imageN.jpg
 ```
 
+Each of the paths passed as arguments to the container is a raw image file.
+The container must find all the faces in the image and create a face embedding
+for each of the faces. If the environment variable `PREALIGNED=true` is set in
+the container, the face finding step can be skipped and the container should
+assume that each image contains a single cropped face.
+
 The container is expected output the following JSON structure to stdout:
 
 ```js

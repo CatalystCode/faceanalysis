@@ -24,9 +24,9 @@ def find_faces(img: Image) -> Iterable[Image]:
         yield img[top:bottom, left:right]
 
 
-def get_face_vectors(img_path: str) -> List[FaceVector]:
+def get_face_vectors(img_path: str, prealigned: bool) -> List[FaceVector]:
     img = fr.load_image_file(img_path)
-    faces = find_faces(img)
+    faces = [img] if prealigned else find_faces(img)
 
     face_vectors = []
     for face in faces:
@@ -39,6 +39,7 @@ def get_face_vectors(img_path: str) -> List[FaceVector]:
 def _cli():
     from argparse import ArgumentParser
     from argparse import FileType
+    from os import getenv
     import json
 
     parser = ArgumentParser(description=__doc__)
@@ -50,8 +51,10 @@ def _cli():
         image.close()
         image_paths.append(image.name)
 
+    prealigned = getenv('PREALIGNED') == 'true'
+
     # naive implementation for demo purposes, could also batch process images
-    vectors = [get_face_vectors(image_path)
+    vectors = [get_face_vectors(image_path, prealigned)
                for image_path in image_paths]
 
     print(json.dumps({'faceVectors': vectors}))
