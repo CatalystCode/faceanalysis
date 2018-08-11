@@ -2,7 +2,9 @@ from typing import Iterable
 from typing import List
 from typing import Optional
 
-import face_recognition as fr
+from face_recognition import face_encodings
+from face_recognition import face_locations
+from face_recognition import load_image_file
 import numpy as np
 
 FaceVector = List[float]
@@ -10,7 +12,7 @@ Image = np.array
 
 
 def get_face_embedding(face: Image) -> Optional[FaceVector]:
-    cropped_features = fr.face_encodings(face)
+    cropped_features = face_encodings(face)
     if not cropped_features:
         return None
 
@@ -19,13 +21,12 @@ def get_face_embedding(face: Image) -> Optional[FaceVector]:
 
 
 def find_faces(img: Image) -> Iterable[Image]:
-    face_locations = fr.face_locations(img)
-    for top, right, bottom, left in face_locations:
+    for top, right, bottom, left in face_locations(img):
         yield img[top:bottom, left:right]
 
 
 def get_face_vectors(img_path: str, prealigned: bool) -> List[FaceVector]:
-    img = fr.load_image_file(img_path)
+    img = load_image_file(img_path)
     faces = [img] if prealigned else find_faces(img)
 
     face_vectors = []
