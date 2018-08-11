@@ -1,17 +1,2 @@
-tensorflow == 1.7.0
-requests
-numpy
-scipy
-scikit-learn
-opencv_python
+tensorflow==1.7
 facenet_sandberg
-h5py
-matplotlib
-Pillow
-psutil
-dhash
-pybktree
-progressbar
-pathos
-certifi
-mtcnn
