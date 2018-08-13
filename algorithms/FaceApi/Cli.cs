@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FaceApi
@@ -18,12 +19,26 @@ namespace FaceApi
 
             if (settings.GroupId == null)
             {
-                var trainedGroupId = await faceIdentifier.Train(settings.TrainSetRoot);
+                var trainedGroupId = await faceIdentifier.Train(settings.Args[0]);
                 await Console.Out.WriteLineAsync(trainedGroupId);
+            }
+            else if (settings.Evaluate)
+            {
+                var pairs = new Pairs(settings.Args[0], settings.Args[1]).Parse();
+                var stats = new PairStats();
+                await Task.WhenAll(pairs.Select(async pair =>
+                {
+                    var areSame = await faceIdentifier.Predict(settings.GroupId, settings.MatchThreshold, pair.ImagePath1, pair.ImagePath2);
+                    stats.Record(areSame, pair.AreSame);
+                }));
+
+                await Console.Out.WriteLineAsync($"Accuracy: {stats.Accuracy}");
+                await Console.Out.WriteLineAsync($"Precision: {stats.Precision}");
+                await Console.Out.WriteLineAsync($"Recall: {stats.Recall}");
             }
             else
             {
-                var areSame = await faceIdentifier.Evaluate(settings.GroupId, settings.MatchThreshold, settings.TestImage1, settings.TestImage2);
+                var areSame = await faceIdentifier.Predict(settings.GroupId, settings.MatchThreshold, settings.Args[0], settings.Args[1]);
                 await Console.Out.WriteLineAsync(areSame.ToString());
             }
         }
@@ -31,26 +46,16 @@ namespace FaceApi
 
     class Settings
     {
-        private string[] Args { get; }
+        public string[] Args { get; }
 
         public Settings(string[] args)
         {
             Args = args;
         }
 
-        public string TrainSetRoot
+        public bool Evaluate
         {
-            get => Args[0];
-        }
-
-        public string TestImage1
-        {
-            get => Args[0];
-        }
-
-        public string TestImage2
-        {
-            get => Args[1];
+            get => Environment.GetEnvironmentVariable("FACE_API_EVALUATE") == "true";
         }
 
         public string ApiKey

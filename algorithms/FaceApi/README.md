@@ -34,7 +34,7 @@ The container expects the directory structure to be laid out like so:
 
 The container will print to stdout the group ID of the trained FaceAPI model.
 
-## Evaluation
+## Prediction
 
 After training a model and obtaining a group ID, you can check whether two
 prealigned images contain the same face like so:
@@ -52,3 +52,22 @@ docker run \
 
 The container will print `true` to stdout if the two images contain the same
 face and `false` otherwise.
+
+## Evaluation
+
+The model can also be evaluated against a FaceNet pairs.txt file:
+
+```bash
+docker run \
+  -e FACE_API_KEY="<change-me>" \
+  -e FACE_API_REGION="<change-me>" \
+  -e FACE_API_GROUP_ID="<change-me>" \
+  -e FACE_API_EVALUATE="true" \
+  -v /path/to/evaluation/data:/data \
+  face_api_container \
+  /data/pairs.txt \
+  /data/images
+```
+
+The container will print summary statistics like accuracy, precision and
+recall to stdout.
