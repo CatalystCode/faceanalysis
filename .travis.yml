@@ -14,6 +14,10 @@ jobs:
     stage: lint
     script: make flake8
 
+  - name: MyPy
+    stage: lint
+    script: make mypy
+
   - name: Tests
     stage: test
     script: make test
