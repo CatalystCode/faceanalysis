@@ -27,7 +27,16 @@ namespace FaceApi
         public async Task<bool> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2)
         {
             var faces = await Task.WhenAll(DetectFaces(imagePath1), DetectFaces(imagePath2));
-            var result = await Client.Face.VerifyFaceToFaceAsync(faces[0][0], faces[1][0]);
+
+            if (faces[0].Count == 0 || faces[1].Count == 0)
+            {
+                return false;
+            }
+
+            var face1 = faces[0][0];
+            var face2 = faces[1][0];
+
+            var result = await Client.Face.VerifyFaceToFaceAsync(face1, face2);
             return result.Confidence >= matchThreshold;
         }
 
