@@ -29,12 +29,13 @@ class DuplicateUser(AuthError):
     pass
 
 
-def generate_auth_token(user, expiration=TOKEN_EXPIRATION):
-    serializer = Serializer(TOKEN_SECRET_KEY, expires_in=expiration)
-    return serializer.dumps({'id': user.id})
+def generate_auth_token(user: User) -> str:
+    serializer = Serializer(TOKEN_SECRET_KEY, expires_in=TOKEN_EXPIRATION)
+    token = serializer.dumps({'id': user.id})
+    return token.decode('ascii')  # type: ignore
 
 
-def load_user_from_auth_token(token):
+def load_user_from_auth_token(token: str) -> User:
     serializer = Serializer(TOKEN_SECRET_KEY)
     try:
         data = serializer.loads(token)
@@ -50,7 +51,7 @@ def load_user_from_auth_token(token):
     return user
 
 
-def load_user(username, password):
+def load_user(username: str, password: str) -> User:
     db = get_database_manager()
     session = db.get_session()
     user = session.query(User) \
@@ -67,7 +68,7 @@ def load_user(username, password):
     return user
 
 
-def register_user(username, password):
+def register_user(username: str, password: str):
     db = get_database_manager()
     session = db.get_session()
     user = session.query(User) \
@@ -84,4 +85,3 @@ def register_user(username, password):
     session = db.get_session()
     session.add(user)
     db.safe_commit(session)
-    return username

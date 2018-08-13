@@ -1,11 +1,15 @@
 from datetime import datetime
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 import numpy as np
 
-from faceanalysis.face_vectorizer import face_vector_from_text
+from faceanalysis.face_vectorizer import face_vector_from_text, FaceVector
 from faceanalysis.face_vectorizer import face_vector_to_text
 from faceanalysis.face_vectorizer import get_face_vectors
 from faceanalysis.log import get_logger
+from faceanalysis.models.database_manager import Session
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import FeatureMapping
@@ -22,14 +26,14 @@ db = get_database_manager()
 logger = get_logger(__name__)
 
 
-def _add_entry_to_session(cls, session, **kwargs):
+def _add_entry_to_session(cls, session: Session, **kwargs):
     logger.debug('adding entry to session')
     row = cls(**kwargs)
     session.add(row)
     return row
 
 
-def _store_face_vector(features, img_id, session):
+def _store_face_vector(features: FaceVector, img_id: str, session: Session):
     logger.debug('processing feature mapping')
     _add_entry_to_session(FeatureMapping, session,
                           img_id=img_id,
@@ -37,7 +41,11 @@ def _store_face_vector(features, img_id, session):
     return features
 
 
-def _store_matches(this_img_id, that_img_id, distance_score, session):
+def _store_matches(this_img_id: str,
+                   that_img_id: str,
+                   distance_score: float,
+                   session: Session):
+
     logger.debug('processing matches')
     _add_entry_to_session(Match, session,
                           this_img_id=this_img_id,
@@ -49,7 +57,7 @@ def _store_matches(this_img_id, that_img_id, distance_score, session):
                           distance_score=distance_score)
 
 
-def _load_image_ids_and_face_vectors():
+def _load_image_ids_and_face_vectors() -> Tuple[List[str], np.array]:
     logger.debug('getting all img ids and respective features')
     session = db.get_session()
     known_features = []
@@ -64,7 +72,10 @@ def _load_image_ids_and_face_vectors():
     return img_ids, np.array(known_features)
 
 
-def _prepare_matches(matches, that_img_id, distance_score):
+def _prepare_matches(matches: List[dict],
+                     that_img_id: str,
+                     distance_score: float):
+
     match_exists = False
     for match in matches:
         if match["that_img_id"] == that_img_id:
@@ -79,7 +90,10 @@ def _prepare_matches(matches, that_img_id, distance_score):
         })
 
 
-def _update_img_status(img_id, status=None, error_msg=None):
+def _update_img_status(img_id: str,
+                       status: Optional[ImageStatusEnum] = None,
+                       error_msg: Optional[str] = None):
+
     session = db.get_session()
     update_fields = {}
     if status:
@@ -92,7 +106,9 @@ def _update_img_status(img_id, status=None, error_msg=None):
 
 
 # pylint: disable=len-as-condition
-def _compute_distances(face_encodings, face_to_compare):
+def _compute_distances(face_encodings: np.array,
+                       face_to_compare: FaceVector) -> np.array:
+
     if len(face_encodings) == 0:
         return np.empty(0)
 
@@ -101,7 +117,7 @@ def _compute_distances(face_encodings, face_to_compare):
 # pylint: enable=len-as-condition
 
 
-def process_image(img_id):
+def process_image(img_id: str):
     logger.info('Processing image %s', img_id)
     try:
         img_path = get_image_path(img_id)
@@ -120,7 +136,7 @@ def process_image(img_id):
 
     session = db.get_session()
     _add_entry_to_session(Image, session, img_id=img_id)
-    matches = []
+    matches = []  # type: List[dict]
     for face_vector in face_vectors:
         _store_face_vector(face_vector, img_id, session)
 

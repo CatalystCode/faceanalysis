@@ -10,5 +10,5 @@ celery.conf.task_default_queue = IMAGE_PROCESSOR_QUEUE
 
 
 @celery.task(ignore_result=True)
-def process_image(img_id):
+def process_image(img_id: str):
     face_matcher.process_image(img_id)

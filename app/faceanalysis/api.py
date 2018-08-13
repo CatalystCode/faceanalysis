@@ -1,4 +1,6 @@
 from http import HTTPStatus
+from typing import Tuple
+from typing import Union
 
 from flask import Flask
 from flask import g
@@ -12,6 +14,8 @@ from werkzeug.utils import secure_filename
 from faceanalysis import auth
 from faceanalysis import domain
 from faceanalysis.settings import ALLOWED_EXTENSIONS
+
+JsonResponse = Union[dict, Tuple[dict, int]]
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -31,13 +35,13 @@ ERROR_DUPLICATE_IMAGE = 'Image upload failed: image previously uploaded'
 class AuthenticationToken(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def get(self):
+    def get(self) -> JsonResponse:
         token = auth.generate_auth_token(g.user)
-        return {'token': token.decode('ascii')}
+        return {'token': token}
 
 
 class RegisterUser(Resource):
-    def post(self):
+    def post(self) -> JsonResponse:
         parser = RequestParser()
         parser.add_argument('username',
                             required=True,
@@ -50,7 +54,7 @@ class RegisterUser(Resource):
         password = args['password']
 
         try:
-            username = auth.register_user(username, password)
+            auth.register_user(username, password)
         except auth.DuplicateUser:
             return {'error_msg': ERROR_USER_ALREADY_REGISTERED},\
                    HTTPStatus.BAD_REQUEST.value
@@ -61,7 +65,7 @@ class RegisterUser(Resource):
 class ProcessImg(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def post(self):
+    def post(self) -> JsonResponse:
         parser = RequestParser()
         parser.add_argument('img_id',
                             required=True,
@@ -80,7 +84,7 @@ class ProcessImg(Resource):
 
         return {'img_id': img_id}
 
-    def get(self, img_id):
+    def get(self, img_id: str) -> JsonResponse:
         try:
             status, error = domain.get_processing_status(img_id)
         except domain.ImageDoesNotExist:
@@ -93,7 +97,7 @@ class ProcessImg(Resource):
 class ImgUpload(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def post(self):
+    def post(self) -> JsonResponse:
         parser = RequestParser()
         parser.add_argument('image',
                             type=FileStorage,
@@ -120,7 +124,7 @@ class ImgUpload(Resource):
 class ImgMatchList(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def get(self, img_id):
+    def get(self, img_id: str) -> JsonResponse:
         images, distances = domain.lookup_matching_images(img_id)
         return {'imgs': images, 'distances': distances}
 
@@ -128,14 +132,14 @@ class ImgMatchList(Resource):
 class ImgList(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def get(self):
+    def get(self) -> JsonResponse:
         images = domain.list_images()
         return {'imgs': images}
 # pylint: enable=no-self-use
 
 
 @basic_auth.verify_password
-def verify_password(username_or_token, password):
+def verify_password(username_or_token: str, password: str) -> bool:
     try:
         user = auth.load_user_from_auth_token(username_or_token)
     except auth.InvalidAuthToken:

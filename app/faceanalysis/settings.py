@@ -27,7 +27,7 @@ FACE_VECTORIZE_ALGORITHM = environ.get(
     'FACE_VECTORIZE_ALGORITHM',
     'cwolff/face_recognition')
 
-TOKEN_SECRET_KEY = environ.get('TOKEN_SECRET_KEY')
+TOKEN_SECRET_KEY = environ.get('TOKEN_SECRET_KEY', '')
 TOKEN_EXPIRATION = int(environ.get(
     'DEFAULT_TOKEN_EXPIRATION_SECS',
     '500'))
