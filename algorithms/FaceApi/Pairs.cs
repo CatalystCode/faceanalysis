@@ -6,6 +6,7 @@ namespace FaceApi
 {
     class Pairs
     {
+        private static readonly string[] AllowedExtensions = new[] { "png", "jpg", "jpeg" };
         private string PairsTxtPath { get; }
         private string ImagesRoot { get; }
 
@@ -59,15 +60,18 @@ namespace FaceApi
                 return false;
             }
 
-            var image = Path.Combine(ImagesRoot, personName, $"{personName}_{imageId.ToString("D4")}.jpg");
-            if (!File.Exists(image))
+            foreach (var extension in AllowedExtensions)
             {
-                imagePath = null;
-                return false;
+                var image = Path.Combine(ImagesRoot, personName, $"{personName}_{imageId.ToString("D4")}.{extension}");
+                if (File.Exists(image))
+                {
+                    imagePath = image;
+                    return true;
+                }
             }
 
-            imagePath = image;
-            return true;
+            imagePath = null;
+            return false;
         }
     }
 
