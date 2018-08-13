@@ -59,7 +59,14 @@ namespace FaceApi
                 return false;
             }
 
-            imagePath = Path.Combine(ImagesRoot, personName, $"{personName}_{imageId.ToString("D4")}.jpg");
+            var image = Path.Combine(ImagesRoot, personName, $"{personName}_{imageId.ToString("D4")}.jpg");
+            if (!File.Exists(image))
+            {
+                imagePath = null;
+                return false;
+            }
+
+            imagePath = image;
             return true;
         }
     }
