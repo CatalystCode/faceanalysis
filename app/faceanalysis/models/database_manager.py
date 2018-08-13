@@ -2,6 +2,7 @@ from functools import lru_cache
 
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
 from faceanalysis.log import get_logger
@@ -16,10 +17,10 @@ class DatabaseManager:
         self.session_factory = sessionmaker(bind=self.engine)
         self.logger = get_logger(__name__)
 
-    def get_session(self):
+    def get_session(self) -> Session:
         return self.session_factory()
 
-    def safe_commit(self, session):
+    def safe_commit(self, session: Session):
         try:
             session.commit()
             self.logger.debug("session committed")
@@ -36,5 +37,5 @@ class DatabaseManager:
 
 
 @lru_cache(maxsize=1)
-def get_database_manager():
+def get_database_manager() -> DatabaseManager:
     return DatabaseManager()

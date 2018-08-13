@@ -1,5 +1,8 @@
 from functools import lru_cache
+from typing import IO
 
+from libcloud.storage.base import Container
+from libcloud.storage.base import Object
 from libcloud.storage.providers import get_driver
 from libcloud.storage.types import ContainerAlreadyExistsError
 from libcloud.storage.types import ObjectError
@@ -21,7 +24,7 @@ class StorageError(Exception):
 
 
 @lru_cache(maxsize=1)
-def _get_storage_service():
+def _get_storage_service() -> Container:
     driver_class = get_driver(getattr(Provider, STORAGE_PROVIDER))
     storage_driver = driver_class(STORAGE_KEY, STORAGE_SECRET)
     try:
@@ -31,7 +34,7 @@ def _get_storage_service():
     return storage_container
 
 
-def _get_image(img_id):
+def _get_image(img_id: str) -> Object:
     container = _get_storage_service()
     for extension in ALLOWED_EXTENSIONS:
         image_name = '{}.{}'.format(img_id, extension)
@@ -45,7 +48,7 @@ def _get_image(img_id):
     raise StorageError('Image {} does not exist'.format(img_id))
 
 
-def store_image(iterator, image_name):
+def store_image(iterator: IO[bytes], image_name: str):
     container = _get_storage_service()
     try:
         container.upload_object_via_stream(iterator, image_name)
@@ -55,7 +58,7 @@ def store_image(iterator, image_name):
     logger.debug('Stored image %s', image_name)
 
 
-def delete_image(img_id):
+def delete_image(img_id: str):
     image = _get_image(img_id)
 
     if not image.delete():
@@ -64,6 +67,6 @@ def delete_image(img_id):
     logger.debug('Removed image %s', img_id)
 
 
-def get_image_path(img_id):
+def get_image_path(img_id: str) -> str:
     image = _get_image(img_id)
     return image.get_cdn_url()

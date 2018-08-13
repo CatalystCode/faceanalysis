@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 
-.PHONY: build-dev build-prod pylint flake8 lint test
+.PHONY: build-dev build-prod pylint flake8 mypy lint test
 
 build-dev:
 	DEVTOOLS="true" docker-compose build
@@ -14,7 +14,10 @@ pylint: build-dev
 flake8: build-dev
 	docker-compose run --rm --no-deps --entrypoint=python3 api -m flake8 /app/faceanalysis
 
-lint: pylint flake8
+mypy: build-dev
+	docker-compose run --rm --no-deps --entrypoint=python3 api -m mypy /app/faceanalysis
+
+lint: pylint flake8 mypy
 
 test: build-dev
 	$(eval data_dir := $(shell mktemp -d))

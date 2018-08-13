@@ -1,3 +1,7 @@
+from typing import IO
+from typing import List
+from typing import Tuple
+
 from faceanalysis import tasks
 from faceanalysis.log import get_logger
 from faceanalysis.models.database_manager import get_database_manager
@@ -26,7 +30,7 @@ class DuplicateImage(FaceAnalysisError):
     pass
 
 
-def process_image(img_id):
+def process_image(img_id: str):
     db = get_database_manager()
     session = db.get_session()
     img_status = session.query(ImageStatus)\
@@ -44,7 +48,7 @@ def process_image(img_id):
     logger.debug('Image %s queued for processing', img_id)
 
 
-def get_processing_status(img_id):
+def get_processing_status(img_id: str) -> Tuple[str, str]:
     db = get_database_manager()
     session = db.get_session()
     img_status = session.query(ImageStatus)\
@@ -59,7 +63,7 @@ def get_processing_status(img_id):
     return img_status.status, img_status.error_msg
 
 
-def upload_image(stream, filename):
+def upload_image(stream: IO[bytes], filename: str) -> str:
     img_id = filename[:filename.find('.')]
     db = get_database_manager()
     session = db.get_session()
@@ -83,7 +87,7 @@ def upload_image(stream, filename):
     return img_id
 
 
-def list_images():
+def list_images() -> List[str]:
     db = get_database_manager()
     session = db.get_session()
     query = session.query(Image)\
@@ -95,7 +99,7 @@ def list_images():
     return image_ids
 
 
-def lookup_matching_images(img_id):
+def lookup_matching_images(img_id: str) -> Tuple[List[str], List[float]]:
     db = get_database_manager()
     session = db.get_session()
     query = session.query(Match)\
