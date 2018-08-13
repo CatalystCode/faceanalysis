@@ -13,7 +13,7 @@ FaceVector = List[float]
 Image = np.array
 
 
-def get_face_vectors(img_path: str, prealigned: bool) -> List[List[float]]:
+def get_face_vectors(img_path: str, prealigned: bool) -> List[FaceVector]:
     identifier = face.Identifier(
         facenet_model_checkpoint='20180402-114759.pb')
     image = identifier.get_image_from_path(img_path)
