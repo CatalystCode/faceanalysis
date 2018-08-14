@@ -12,6 +12,9 @@ namespace FaceApi
     public class FaceIdentifier
     {
         private static readonly TimeSpan TrainingPollInterval = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan RateLimitInterval = TimeSpan.FromSeconds(1);
+        private static readonly int RateLimitRequests = 10;
+
         private TimeLimiter RateLimit { get; }
         private FaceClient Client { get; }
 
@@ -22,7 +25,7 @@ namespace FaceApi
                 Endpoint = apiEndpoint
             };
 
-            RateLimit = TimeLimiter.GetFromMaxCountByInterval(10, TimeSpan.FromSeconds(1));
+            RateLimit = TimeLimiter.GetFromMaxCountByInterval(RateLimitRequests, RateLimitInterval);
         }
 
         public async Task<bool> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2)
