@@ -33,11 +33,9 @@ namespace FaceApi
                 return false;
             }
 
-            var face1 = faces[0][0];
-            var face2 = faces[1][0];
+            var verifications = await Task.WhenAll(faces[0].SelectMany(face1 => faces[1].Select(face2 => Client.Face.VerifyFaceToFaceAsync(face1, face2))));
 
-            var result = await Client.Face.VerifyFaceToFaceAsync(face1, face2);
-            return result.Confidence >= matchThreshold;
+            return verifications.Any(result => result.Confidence >= matchThreshold);
         }
 
         private async Task<List<Guid>> DetectFaces(string imagePath)
