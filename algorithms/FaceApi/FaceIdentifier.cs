@@ -11,6 +11,7 @@ namespace FaceApi
 {
     public class FaceIdentifier
     {
+        private static readonly TimeSpan TrainingPollInterval = TimeSpan.FromSeconds(10);
         private TimeLimiter RateLimit { get; }
         private FaceClient Client { get; }
 
@@ -63,9 +64,9 @@ namespace FaceApi
 
             await AddFaces(groupId, trainSetRoot, people);
 
-            await TrainPersonGroup(groupId);
+            var success = await TrainPersonGroup(groupId);
 
-            return groupId;
+            return success ? groupId : null;
         }
 
         private async Task CreatePersonGroup(string groupId)
@@ -77,13 +78,31 @@ namespace FaceApi
             });
         }
 
-        private async Task TrainPersonGroup(string groupId)
+        private async Task<bool> TrainPersonGroup(string groupId)
         {
             await RateLimit.Perform(async () =>
             {
                 await Client.LargePersonGroup.TrainAsync(groupId);
                 await Console.Error.WriteLineAsync($"Trained person group {groupId}");
             });
+
+            while (true)
+            {
+                var status = await Client.LargePersonGroup.GetTrainingStatusAsync(groupId);
+                switch (status.Status)
+                {
+                    case TrainingStatusType.Nonstarted:
+                    case TrainingStatusType.Running:
+                        await Task.Delay(TrainingPollInterval);
+                        break;
+
+                    case TrainingStatusType.Succeeded:
+                        return true;
+
+                    case TrainingStatusType.Failed:
+                        return false;
+                }
+            }
         }
 
         private async Task<IEnumerable<Person>> CreatePeople(string groupId, IEnumerable<string> names)

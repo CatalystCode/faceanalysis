@@ -26,7 +26,7 @@ namespace FaceApi
             if (settings.TryParseForTraining(out string trainSetRoot))
             {
                 var trainedGroupId = await faceIdentifier.Train(trainSetRoot);
-                await Console.Out.WriteLineAsync(trainedGroupId);
+                await Console.Out.WriteLineAsync(trainedGroupId ?? "Training failed");
             }
             else if (settings.TryParseForEvaluation(out string pairsTxtPath, out string imagesRoot))
             {
