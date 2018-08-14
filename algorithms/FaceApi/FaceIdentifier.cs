@@ -24,7 +24,7 @@ namespace FaceApi
             RateLimit = TimeLimiter.GetFromMaxCountByInterval(10, TimeSpan.FromSeconds(1));
         }
 
-        public async Task<bool> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2)
+        public async Task<bool> Predict(double matchThreshold, string imagePath1, string imagePath2)
         {
             var faces = await Task.WhenAll(DetectFaces(imagePath1), DetectFaces(imagePath2));
 

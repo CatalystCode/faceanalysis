@@ -28,13 +28,13 @@ namespace FaceApi
                 var trainedGroupId = await faceIdentifier.Train(trainSetRoot);
                 await Console.Out.WriteLineAsync(trainedGroupId);
             }
-            else if (settings.TryParseForEvaluation(out string evaluationGroupId, out string pairsTxtPath, out string imagesRoot))
+            else if (settings.TryParseForEvaluation(out string pairsTxtPath, out string imagesRoot))
             {
                 var pairs = new Pairs(pairsTxtPath, imagesRoot).Parse();
                 var stats = new PairStats();
                 await Task.WhenAll(pairs.Select(async pair =>
                 {
-                    var areSame = await faceIdentifier.Predict(evaluationGroupId, matchThreshold, pair.ImagePath1, pair.ImagePath2);
+                    var areSame = await faceIdentifier.Predict(matchThreshold, pair.ImagePath1, pair.ImagePath2);
                     stats.Record(areSame, pair.AreSame);
                 }));
 
@@ -42,9 +42,9 @@ namespace FaceApi
                 await Console.Out.WriteLineAsync($"Precision: {stats.Precision}");
                 await Console.Out.WriteLineAsync($"Recall: {stats.Recall}");
             }
-            else if (settings.TryParseForPrediction(out string predictionGroupId, out string imagePath1, out string imagePath2))
+            else if (settings.TryParseForPrediction(out string imagePath1, out string imagePath2))
             {
-                var areSame = await faceIdentifier.Predict(predictionGroupId, matchThreshold, imagePath1, imagePath2);
+                var areSame = await faceIdentifier.Predict(matchThreshold, imagePath1, imagePath2);
                 await Console.Out.WriteLineAsync(areSame.ToString());
             }
             else
@@ -91,36 +91,37 @@ namespace FaceApi
             return true;
         }
 
-        public bool TryParseForEvaluation(out string groupId, out string pairsTxtPath, out string trainSetRoot)
+        public bool TryParseForEvaluation(out string pairsTxtPath, out string trainSetRoot)
         {
-            if (GroupId == null || Args.Length != 2 || !File.Exists(Args[0]) || !Directory.Exists(Args[1]))
+            if (!Evaluation || Args.Length != 2 || !File.Exists(Args[0]) || !Directory.Exists(Args[1]))
             {
-                groupId = null;
                 pairsTxtPath = null;
                 trainSetRoot = null;
                 return false;
             }
 
-            groupId = GroupId;
             pairsTxtPath = Args[0];
             trainSetRoot = Args[1];
             return true;
         }
 
-        public bool TryParseForPrediction(out string groupId, out string imagePath1, out string imagePath2)
+        public bool TryParseForPrediction(out string imagePath1, out string imagePath2)
         {
-            if (GroupId == null || Args.Length != 2 || !File.Exists(Args[0]) || !File.Exists(Args[1]))
+            if (Args.Length != 2 || !File.Exists(Args[0]) || !File.Exists(Args[1]))
             {
-                groupId = null;
                 imagePath1 = null;
                 imagePath2 = null;
                 return false;
             }
 
-            groupId = GroupId;
             imagePath1 = Args[0];
             imagePath2 = Args[1];
             return true;
+        }
+
+        private bool Evaluation
+        {
+            get => Environment.GetEnvironmentVariable("FACE_API_EVALUATE") == "true";
         }
 
         private string ApiKey
