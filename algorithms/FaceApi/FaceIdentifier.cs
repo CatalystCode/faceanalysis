@@ -25,31 +25,22 @@ namespace FaceApi
             RateLimit = TimeLimiter.GetFromMaxCountByInterval(10, TimeSpan.FromSeconds(1));
         }
 
-        public async Task<bool> Predict(double matchThreshold, string imagePath1, string imagePath2)
+        public async Task<bool> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2)
         {
-            var faces = await Task.WhenAll(DetectFaces(imagePath1), DetectFaces(imagePath2));
+            var allFaces = await Task.WhenAll(DetectFaces(imagePath1), DetectFaces(imagePath2));
+            var faces1 = allFaces[0];
+            var faces2 = allFaces[1];
 
-            if (faces[0].Count == 0 || faces[1].Count == 0)
+            if (faces1.Count == 0 || faces2.Count == 0)
             {
                 return false;
             }
 
-            var verifications = await Task.WhenAll(faces[0].SelectMany(face1 => faces[1].Select(face2 => Client.Face.VerifyFaceToFaceAsync(face1, face2))));
+            var allPeople = await IdentifyPeople(faces1.Concat(faces2), groupId, matchThreshold);
+            var people1 = allPeople.Where(candidates => faces1.Contains(candidates.FaceId)).SelectMany(candidates => candidates.Candidates).Select(person => person.PersonId).ToHashSet();
+            var people2 = allPeople.Where(candidates => faces2.Contains(candidates.FaceId)).SelectMany(candidates => candidates.Candidates).Select(person => person.PersonId).ToHashSet();
 
-            return verifications.Any(result => result.Confidence >= matchThreshold);
-        }
-
-        private async Task<List<Guid>> DetectFaces(string imagePath)
-        {
-            using (var stream = File.OpenRead(imagePath))
-            {
-                return await RateLimit.Perform(async () =>
-                {
-                    var result = await Client.Face.DetectWithStreamAsync(stream, returnFaceId: true);
-                    await Console.Error.WriteLineAsync($"Got {result.Count} faces for image {imagePath}");
-                    return result.Select(face => face.FaceId.Value).ToList();
-                });
-            }
+            return people1.Any(person => people2.Contains(person));
         }
 
         public async Task<string> Train(string trainSetRoot)
@@ -67,6 +58,37 @@ namespace FaceApi
             var success = await TrainPersonGroup(groupId);
 
             return success ? groupId : null;
+        }
+
+        private async Task<IList<IdentifyResult>> IdentifyPeople(IEnumerable<Guid> faceIds, string groupId, double matchThreshold)
+        {
+            return await RateLimit.Perform(async () =>
+            {
+                var results = await Client.Face.IdentifyAsync(
+                    faceIds: faceIds.ToList(),
+                    largePersonGroupId: groupId,
+                    confidenceThreshold: matchThreshold);
+
+                foreach (var result in results)
+                {
+                    await Console.Error.WriteLineAsync($"Matched {result.Candidates.Count} people for face {result.FaceId}");
+                }
+
+                return results;
+            });
+        }
+
+        private async Task<IList<Guid>> DetectFaces(string imagePath)
+        {
+            using (var stream = File.OpenRead(imagePath))
+            {
+                return await RateLimit.Perform(async () =>
+                {
+                    var result = await Client.Face.DetectWithStreamAsync(stream, returnFaceId: true);
+                    await Console.Error.WriteLineAsync($"Got {result.Count} faces for image {imagePath}");
+                    return result.Select(face => face.FaceId.Value).ToList();
+                });
+            }
         }
 
         private async Task CreatePersonGroup(string groupId)
