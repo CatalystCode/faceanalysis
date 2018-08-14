@@ -108,7 +108,6 @@ namespace FaceApi
             await RateLimit.Perform(async () =>
             {
                 await Client.LargePersonGroup.TrainAsync(groupId);
-                await Console.Error.WriteLineAsync($"Trained person group {groupId}");
             });
 
             while (true)
@@ -118,13 +117,16 @@ namespace FaceApi
                 {
                     case TrainingStatusType.Nonstarted:
                     case TrainingStatusType.Running:
+                        await Console.Error.WriteLineAsync($"Training of person group {groupId} is running");
                         await Task.Delay(TrainingPollInterval);
                         break;
 
                     case TrainingStatusType.Succeeded:
+                        await Console.Error.WriteLineAsync($"Training of person group {groupId} is done");
                         return true;
 
                     case TrainingStatusType.Failed:
+                        await Console.Error.WriteLineAsync($"Training of person group {groupId} failed");
                         return false;
                 }
             }
