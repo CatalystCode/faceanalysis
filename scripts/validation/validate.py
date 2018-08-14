@@ -68,25 +68,25 @@ def _get_paths_and_labels(image_dir: str,
     labels = []
     for pair in pairs:
         _add_extension = (lambda rel_image_path, image_dir:
-                          f'{rel_image_path}.jpg'
-                          if exists(join(image_dir, f'{rel_image_path}.jpg'))
-                          else f'{rel_image_path}.png')
+                          '{}.jpg'.format(rel_image_path)
+                          if exists(join(image_dir, '{}.jpg'.format(rel_image_path)))
+                          else '{}.png'.format(rel_image_path))
         if len(pair) == 3:
             person, image_num_0, image_num_1 = cast(Match, pair)
-            rel_image_path_no_ext = join(person,
-                                         f'{person}_{image_num_0:04d}')
+            rel_image_path_no_ext = join(
+                person, '{}_{:04d}'.format(person, image_num_0))
             rel_image_path_0 = _add_extension(rel_image_path_no_ext, image_dir)
-            rel_image_path_no_ext = join(person,
-                                         f'{person}_{image_num_1:04d}')
+            rel_image_path_no_ext = join(
+                person, '{}_{:04d}'.format(person, image_num_1))
             rel_image_path_1 = _add_extension(rel_image_path_no_ext, image_dir)
             is_same_person = True
         elif len(pair) == 4:
             person_0, image_num_0, person_1, image_num_1 = cast(Mismatch, pair)
-            rel_image_path_no_ext = join(person_0,
-                                         f'{person_0}_{image_num_0:04d}')
+            rel_image_path_no_ext = join(
+                person_0, '{}_{:04d}'.format(person_0, image_num_0))
             rel_image_path_0 = _add_extension(rel_image_path_no_ext, image_dir)
-            rel_image_path_no_ext = join(person_1,
-                                         f'{person_1}_{image_num_1:04d}')
+            rel_image_path_no_ext = join(
+                person_1, '{}_{:04d}'.format(person_1, image_num_1))
             rel_image_path_1 = _add_extension(rel_image_path_no_ext, image_dir)
             is_same_person = False
         if (exists(join(image_dir, rel_image_path_0))
@@ -95,7 +95,7 @@ def _get_paths_and_labels(image_dir: str,
             paths.append((rel_image_path_0, rel_image_path_1))
             labels.append(is_same_person)
         else:
-            err = f'{rel_image_path_no_ext} with .jpg or .png extensions'
+            err = '{} with .jpg or .png extensions'.format(rel_image_path_no_ext)
             raise FileNotFoundError(err)
     return paths, labels
 
@@ -117,11 +117,11 @@ def _distance_between_embeddings(
                                           metric=DistanceMetric.COSINE.value)
         return np.arccos(similarity) / math.pi
     else:
-        metrics = [f'{DistanceMetric.__qualname__}.{attr}'
+        metrics = ['{}.{}'.format(DistanceMetric.__qualname__, attr)
                    for attr in dir(DistanceMetric)
                    if not callable(getattr(DistanceMetric, attr))
                    and not attr.startswith("__")]
-        err = f"Undefined {DistanceMetric.__qualname__}. Choose from {metrics}"
+        err = 'Undefined {}. Choose from {}'.format(DistanceMetric.__qualname__, metrics)
         raise DistanceMetricException(err)
 
 
@@ -198,7 +198,7 @@ def _parse_arguments():
                         type=int,
                         required=True,
                         help='Number of cross validation folds')
-    distance_metrics = [f'{attr}'
+    distance_metrics = ['{}'.format(attr)
                         for attr in dir(DistanceMetric)
                         if not callable(getattr(DistanceMetric, attr))
                         and not attr.startswith("__")]
@@ -206,7 +206,7 @@ def _parse_arguments():
         '--distance_metric',
         type=str,
         required=True,
-        help=f"Distance metric for face verification: {distance_metrics}.")
+        help='Distance metric for face verification: {}.'.format(distance_metrics))
     parser.add_argument('--threshold_start',
                         type=float,
                         required=True,
@@ -247,7 +247,7 @@ def _main(args: Namespace) -> None:
     flat_paths = [path for pair in pair_paths for path in pair]
     client = docker.from_env()
     volumes = {args.image_dir: {'bind': '/images', 'mode': 'ro'}}
-    img_mount = ' '.join([f'/images/{path}' for path in flat_paths])
+    img_mount = ' '.join(['/images/{}'.format(path) for path in flat_paths])
     prealigned_environment_var = ["PREALIGNED=true"] if args.prealigned else []
     stdout = client.containers.run(args.face_verification_container,
                                    img_mount,
@@ -284,9 +284,9 @@ def _main(args: Namespace) -> None:
                                            args.threshold_start,
                                            args.threshold_end,
                                            args.threshold_step)
-    print(f'Accuracy: {accuracy}')
-    print(f'Recall: {recall}')
-    print(f'Precision: {precision}')
+    print('Accuracy: {}'.format(accuracy))
+    print('Recall: {}'.format(recall))
+    print('Precision: {}'.format(precision))
 
 
 def _cli() -> None:
