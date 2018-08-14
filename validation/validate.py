@@ -19,8 +19,8 @@ Label = bool
 
 
 class DistanceMetric(Enum):
-    COSINE = 'cosine'
-    EUCLIDEAN = 'euclidean'
+    ANGULAR_DISTANCE = 0
+    EUCLIDEAN_SQUARED = 1
 
 
 class DistanceMetricException(Exception):
@@ -104,17 +104,18 @@ def _distance_between_embeddings(
         embeddings1: np.ndarray,
         embeddings2: np.ndarray,
         distance_metric: DistanceMetric) -> np.ndarray:
-    if distance_metric == DistanceMetric.EUCLIDEAN:
+    if distance_metric == DistanceMetric.EUCLIDEAN_SQUARED:
         return np.square(
             paired_distances(
                 embeddings1,
                 embeddings2,
-                metric=DistanceMetric.EUCLIDEAN.value))
-    elif distance_metric == DistanceMetric.COSINE:
+                metric='euclidean'))
+    elif distance_metric == DistanceMetric.ANGULAR_DISTANCE:
         # Angular Distance: https://en.wikipedia.org/wiki/Cosine_similarity
-        similarity = 1 - paired_distances(embeddings1,
-                                          embeddings2,
-                                          metric=DistanceMetric.COSINE.value)
+        similarity = 1 - paired_distances(
+                            embeddings1,
+                            embeddings2,
+                            metric='cosine')
         return np.arccos(similarity) / math.pi
     else:
         metrics = [f'{DistanceMetric.__qualname__}.{attr}'
@@ -198,14 +199,14 @@ def _parse_arguments():
                         type=int,
                         required=True,
                         help='Number of cross validation folds')
-    distance_metrics = [f'{attr}'
-                        for attr in dir(DistanceMetric)
-                        if not callable(getattr(DistanceMetric, attr))
-                        and not attr.startswith("__")]
+    distance_metrics = [str(metric).replace(f'{DistanceMetric.__qualname__}.',
+                                            '')
+                        for metric in DistanceMetric]
     parser.add_argument(
         '--distance_metric',
         type=str,
         required=True,
+        choices=distance_metrics,
         help=f"Distance metric for face verification: {distance_metrics}.")
     parser.add_argument('--threshold_start',
                         type=float,
