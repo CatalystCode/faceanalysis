@@ -17,8 +17,9 @@ namespace FaceApi
 
         private TimeLimiter RateLimit { get; }
         private FaceClient Client { get; }
+        private PredictionMode PredictionMode { get; }
 
-        public FaceIdentifier(string apiKey, string apiEndpoint)
+        public FaceIdentifier(string apiKey, string apiEndpoint, PredictionMode predictionMode)
         {
             Client = new FaceClient(new ApiKeyServiceClientCredentials(apiKey))
             {
@@ -26,6 +27,8 @@ namespace FaceApi
             };
 
             RateLimit = TimeLimiter.GetFromMaxCountByInterval(RateLimitRequests, RateLimitInterval);
+
+            PredictionMode = predictionMode;
         }
 
         public async Task<bool> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2)
@@ -39,11 +42,17 @@ namespace FaceApi
                 return false;
             }
 
-            var allPeople = await IdentifyPeople(faces1.Concat(faces2), groupId, matchThreshold);
-            var people1 = allPeople.Where(candidates => faces1.Contains(candidates.FaceId)).SelectMany(candidates => candidates.Candidates).Select(person => person.PersonId).ToHashSet();
-            var people2 = allPeople.Where(candidates => faces2.Contains(candidates.FaceId)).SelectMany(candidates => candidates.Candidates).Select(person => person.PersonId).ToHashSet();
+            switch (PredictionMode)
+            {
+                case PredictionMode.Identify:
+                    return await PredictWithIdentify(groupId, matchThreshold, faces1, faces2);
 
-            return people1.Any(person => people2.Contains(person));
+                case PredictionMode.Verify:
+                    return await PredictWithVerify(matchThreshold, faces1, faces2);
+
+                default:
+                    throw new NotImplementedException($"{PredictionMode}");
+            }
         }
 
         public async Task<string> Train(string trainSetRoot)
@@ -171,5 +180,28 @@ namespace FaceApi
                 });
             }
         }
+
+        private async Task<bool> PredictWithIdentify(string groupId, double matchThreshold, IList<Guid> faces1, IList<Guid> faces2)
+        {
+            var allPeople = await IdentifyPeople(faces1.Concat(faces2), groupId, matchThreshold);
+            var people1 = allPeople.Where(candidates => faces1.Contains(candidates.FaceId)).SelectMany(candidates => candidates.Candidates).Select(person => person.PersonId).ToHashSet();
+            var people2 = allPeople.Where(candidates => faces2.Contains(candidates.FaceId)).SelectMany(candidates => candidates.Candidates).Select(person => person.PersonId).ToHashSet();
+
+            return people1.Any(person => people2.Contains(person));
+        }
+
+        private async Task<bool> PredictWithVerify(double matchThreshold, IList<Guid> faces1, IList<Guid> faces2)
+        {
+            var verifications = await Task.WhenAll(faces1.SelectMany(face1 => faces2.Select(face2 =>
+                Client.Face.VerifyFaceToFaceAsync(face1, face2))));
+
+            return verifications.Any(result => result.Confidence >= matchThreshold);
+        }
+    }
+
+    public enum PredictionMode
+    {
+        Identify,
+        Verify
     }
 }

@@ -15,13 +15,13 @@ namespace FaceApi
         static async Task MainAsync(string[] args)
         {
             var settings = new Settings(args);
-            if (!settings.TryParse(out string apiKey, out string apiEndpoint, out double matchThreshold))
+            if (!settings.TryParse(out string apiKey, out string apiEndpoint, out double matchThreshold, out PredictionMode predictionMode))
             {
                 await Console.Error.WriteLineAsync("Missing api-key and api-endpoint settings");
                 return;
             }
 
-            var faceIdentifier = new FaceIdentifier(apiKey, apiEndpoint);
+            var faceIdentifier = new FaceIdentifier(apiKey, apiEndpoint, predictionMode);
 
             if (settings.TryParseForTraining(out string trainSetRoot))
             {
@@ -63,6 +63,9 @@ namespace FaceApi
 
     class Settings
     {
+        private static readonly PredictionMode DefaultPredictionMode = PredictionMode.Identify;
+        private static readonly double DefaultMatchThreshold = 0.6;
+
         private string[] Args { get; }
 
         public Settings(string[] args)
@@ -70,19 +73,21 @@ namespace FaceApi
             Args = args;
         }
 
-        public bool TryParse(out string apiKey, out string apiEndpoint, out double matchThreshold)
+        public bool TryParse(out string apiKey, out string apiEndpoint, out double matchThreshold, out PredictionMode predictionMode)
         {
             if (ApiKey == null || ApiEndpoint == null)
             {
                 apiKey = null;
                 apiEndpoint = null;
-                matchThreshold = -1;
+                matchThreshold = DefaultMatchThreshold;
+                predictionMode = DefaultPredictionMode;
                 return false;
             }
 
             apiKey = ApiKey;
             apiEndpoint = ApiEndpoint;
             matchThreshold = MatchThreshold;
+            predictionMode = PredictionMode;
             return true;
         }
 
@@ -164,15 +169,29 @@ namespace FaceApi
         {
             get
             {
-                const double defaultMatchThreshold = 0.6;
                 var matchThreshold = Environment.GetEnvironmentVariable("FACE_API_MATCH_THRESHOLD");
 
                 if (matchThreshold == null || !double.TryParse(matchThreshold, out double parsedMatchThreshold))
                 {
-                    return defaultMatchThreshold;
+                    return DefaultMatchThreshold;
                 }
 
                 return parsedMatchThreshold;
+            }
+        }
+
+        private PredictionMode PredictionMode
+        {
+            get
+            {
+                var predictionMode = Environment.GetEnvironmentVariable("FACE_API_PREDICTION_MODE");
+
+                if (predictionMode == null || !Enum.TryParse(typeof(PredictionMode), predictionMode, out object parsedPredictionMode))
+                {
+                    return DefaultPredictionMode;
+                }
+
+                return (PredictionMode)parsedPredictionMode;
             }
         }
 
