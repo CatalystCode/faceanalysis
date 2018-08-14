@@ -50,15 +50,16 @@ def evaluate(embeddings: np.ndarray,
     return np.mean(accuracy), np.mean(recall), np.mean(precision)
 
 
-def _read_pairs(pairs_filename: str) -> List[Pair]:
+def _read_pairs(pairs_filename: str) -> Tuple[List[Pair], int, int]:
     pairs = []
     with open(pairs_filename, 'r') as pair_file:
+        num_sets, num_matches_mismatches = [int(i)
+                                            for i in next(pair_file).split()]
         for line_num, line in enumerate(pair_file):
-            if line_num != 0:
-                pair = cast(Pair, tuple([int(i) if i.isdigit() else i
-                                         for i in line.strip().split()]))
-                pairs.append(pair)
-    return pairs
+            pair = cast(Pair, tuple([int(i) if i.isdigit() else i
+                                     for i in line.strip().split()]))
+            pairs.append(pair)
+    return pairs, num_sets, num_matches_mismatches
 
 
 def _get_paths_and_labels(image_dir: str,
@@ -168,6 +169,17 @@ def _score_k_fold(thresholds: np.ndarray,
     return accuracy, recall, precision
 
 
+def _get_target_faces(embeddings1: List[List[float]],
+                      embeddings2: List[List[float]],
+                      distance_metric: DistanceMetric,
+                      is_match: bool) -> Tuple[List[float], List[float]]:
+    X, Y = zip(*[(emb1, emb2) for emb1 in embeddings1 for emb2 in embeddings2])
+    distances = _distance_between_embeddings(X, Y, distance_metric)
+    distance_criteria = min if is_match else max
+    index, _ = distance_criteria(enumerate(distances), key=lambda x: x[1])
+    return X[index], Y[index]
+
+
 def _parse_arguments():
     parser = ArgumentParser()
     parser.add_argument('--image_dir',
@@ -216,35 +228,53 @@ def _parse_arguments():
     parser.add_argument(
         '--subtract_mean',
         action='store_true',
-        help=f"Subtract mean of embeddings before distance calculation.")
+        help="Subtract mean of embeddings before distance calculation.")
     parser.add_argument(
         '--divide_stddev',
         action='store_true',
-        help=f"Divide embeddings by stddev before distance calculation.")
+        help="Divide embeddings by stddev before distance calculation.")
+    parser.add_argument(
+        '--prealigned',
+        action='store_true',
+        help='Specify if the images have already been aligned.')
     return parser.parse_args()
 
 
 def _main(args: Namespace) -> None:
     args = _parse_arguments()
-    pairs = _read_pairs(args.pairs_file_name)
+    pairs, _, num_matches_mismatches = _read_pairs(args.pairs_file_name)
     pair_paths, labels = _get_paths_and_labels(args.image_dir, pairs)
     flat_paths = [path for pair in pair_paths for path in pair]
     client = docker.from_env()
     volumes = {args.image_dir: {'bind': '/images', 'mode': 'ro'}}
     img_mount = ' '.join([f'/images/{path}' for path in flat_paths])
+    prealigned_environment_var = ["PREALIGNED=true"] if args.prealigned else []
     stdout = client.containers.run(args.face_verification_container,
                                    img_mount,
                                    volumes=volumes,
                                    auto_remove=True,
-                                   environment=["PREALIGNED=true"])
-    response = json.loads(stdout.decode('utf-8').strip())
-    assert(max([len(i) for i in response['faceVectors']]) <= 1)
-    embeddings = np.asarray([[0] * args.embedding_size
-                             if not embedding else embedding[0]
-                             for embedding in response['faceVectors']])
-
-    labels = np.asarray(labels)
+                                   environment=prealigned_environment_var)
+    face_vectors = json.loads(stdout.decode('utf-8').strip())['faceVectors']
     distance_metric = getattr(DistanceMetric, args.distance_metric)
+    if prealigned_environment_var:
+        embeddings = np.asarray([[0] * args.embedding_size
+                                 if not embedding else embedding[0]
+                                 for embedding in face_vectors])
+    else:
+        embeddings = []
+        is_match = False
+        for i, (embs1, embs2) in enumerate(zip(face_vectors[0::2],
+                                               face_vectors[1::2])):
+            if i % num_matches_mismatches == 0:
+                is_match = not is_match
+            embs1, embs2 = _get_target_faces(
+                                embs1 or [[0] * args.embedding_size],
+                                embs2 or [[0] * args.embedding_size],
+                                distance_metric,
+                                is_match)
+            embeddings += [embs1, embs2]
+        embeddings = np.asarray(embeddings)
+    labels = np.asarray(labels)
     accuracy, recall, precision = evaluate(embeddings,
                                            labels,
                                            args.num_folds,
