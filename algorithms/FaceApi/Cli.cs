@@ -34,8 +34,15 @@ namespace FaceApi
                 var stats = new PairStats();
                 await Task.WhenAll(pairs.Select(async pair =>
                 {
-                    var areSame = await faceIdentifier.Predict(matchThreshold, pair.ImagePath1, pair.ImagePath2);
-                    stats.Record(areSame, pair.AreSame);
+                    try
+                    {
+                        var areSame = await faceIdentifier.Predict(matchThreshold, pair.ImagePath1, pair.ImagePath2);
+                        stats.Record(areSame, pair.AreSame);
+                    }
+                    catch (Exception ex)
+                    {
+                        await Console.Error.WriteLineAsync(ex.ToString());
+                    }
                 }));
 
                 await Console.Out.WriteLineAsync($"Accuracy: {stats.Accuracy}");
