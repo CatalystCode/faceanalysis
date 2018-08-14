@@ -146,7 +146,7 @@ def _score_k_fold(thresholds: np.ndarray,
                   divide_stddev: bool) -> Tuple[np.ndarray,
                                                 np.ndarray,
                                                 np.ndarray]:
-    k_fold = KFold(n_splits=num_folds, shuffle=False)
+    k_fold = KFold(n_splits=num_folds, shuffle=True)
     accuracy = np.zeros((num_folds))
     recall = np.zeros((num_folds))
     precision = np.zeros((num_folds))
