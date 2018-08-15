@@ -16,10 +16,11 @@ Image = np.array
 def get_face_vectors_batch(
         img_paths: List[str], prealigned: bool) -> List[List[FaceVector]]:
     identifier = face.Identifier(
-        model_checkpoint='insightface.pb', is_insightface=True)
+        model_checkpoint='insightface.pb', is_insightface=True, dropout_rate=1.0)
 
     images = map(identifier.get_image_from_path, img_paths)
     all_vectors = identifier.vectorize_all(images, prealigned=prealigned)
+    identifier.tear_down()
     np_to_list = []
     for vectors in all_vectors:
         np_to_list.append([vector.tolist() for vector in vectors])
