@@ -1,10 +1,23 @@
+# FaceAnalysis
+
 [![Travis CI status](https://api.travis-ci.org/c-w/faceanalysis.svg?branch=master)](https://travis-ci.org/c-w/faceanalysis)
 
-# Testing and evaluating face detection algorithms
+## What's this?
+
+This repository contains an API for face detection and matching. The algorithm backend used for the computer vision is pluggable and customizable. Currently the following algorithms are supported:
+
+- [Azure FaceAPI](https://azure.microsoft.com/en-us/services/cognitive-services/face/)
+- [face_recognition](https://github.com/ageitgey/face_recognition)
+- [FaceNet](https://github.com/davidsandberg/facenet)
+- [InsightFace (coming soon)](https://github.com/deepinsight/insightface)
+
+![Architecture diagram for faceanalysis](https://user-images.githubusercontent.com/1086421/44155170-90283422-a07a-11e8-8f46-7ccf7f98ebd4.png)
+
+## Testing and evaluating face detection algorithms
 
 See [here](./algorithms/README.md).
 
-# Demo Instructions
+## Demo Instructions
 1. Create an Azure VM (preferably Ubuntu 16.04)
 2. Install Docker and Docker Compose
 3. Clone this repo
@@ -12,7 +25,7 @@ See [here](./algorithms/README.md).
 5. To run tests type `make test` from within the top level directory
 6. To run in production type `make server` from within the top level directory
 
-# Workflow
+## Workflow
 1. Register your user by making a POST request to /api/v1/register_user with a 'username' and 'password'
 2. Optionally retrieve a token by making a GET request to /api/v1/token with your username:password in the Authentication header
 3. Access all other resources by passing your_token:any_value in the Authentication header (using Basic Auth) or by passing username:password for each request
@@ -21,7 +34,7 @@ See [here](./algorithms/README.md).
 6. Check the status of the image to see if it is finished processing by making a GET request to /api/v1/process_image (once the image is finished processing, it will be removed from the host file system)
 7. See which other images are matches by making a GET request to api/v1/image_matches
 
-# Notes
+## Notes
 1. Logs and log rotation are handled by docker, and the specifics can be seen in either docker-compose file
 - To make docker handle logs, the nginx base image creates a symbolic link between the console and the files (access.log and error.log) that normally store logs. Similarly, our defined Dockerfile for mysql creates a symbolic link between the console and the files (error.log) that normally store logs
 - As is default, only mysql error logging is turned on
