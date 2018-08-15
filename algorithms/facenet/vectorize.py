@@ -13,17 +13,23 @@ FaceVector = List[float]
 Image = np.array
 
 
-def get_face_vectors(img_path: str, prealigned: bool) -> List[FaceVector]:
-    identifier = face.Identifier(
-        facenet_model_checkpoint='20180402-114759.pb')
-    image = identifier.get_image_from_path(img_path)
-    vectors = identifier.vectorize(image, prealigned=prealigned)
-    return [vector.tolist() for vector in vectors]
+def get_face_vectors_batch(
+        img_paths: List[str], prealigned: bool) -> List[List[FaceVector]]:
+    identifier = face.Identifier(model_checkpoint='20180402-114759.pb')
+
+    images = map(identifier.get_image_from_path, img_paths)
+    all_vectors = identifier.vectorize_all(images, prealigned=prealigned)
+    np_to_list = []
+    for vectors in all_vectors:
+        np_to_list.append([vector.tolist() for vector in vectors])
+    return np_to_list
 
 
 def _cli():
     from argparse import ArgumentParser
     from argparse import FileType
+    from os import getenv
+    import json
 
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('images', type=FileType('r'), nargs='+')
@@ -36,9 +42,7 @@ def _cli():
 
     prealigned = getenv('PREALIGNED') == 'true'
 
-    # naive implementation for demo purposes, could also batch process images
-    vectors = [get_face_vectors(image_path, prealigned)
-               for image_path in image_paths]
+    vectors = get_face_vectors_batch(image_paths, prealigned)
 
     print(json.dumps({'faceVectors': vectors}))
 
