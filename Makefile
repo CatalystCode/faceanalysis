@@ -16,6 +16,7 @@ build-algorithms:
 	docker build -t "$(docker_repo)/faceanalysis_facerecognition:$(build_tag)" algorithms/face_recognition
 	docker build -t "$(docker_repo)/faceanalysis_faceapi:$(build_tag)" algorithms/FaceApi
 	docker build -t "$(docker_repo)/faceanalysis_facenet:$(build_tag)" algorithms/facenet
+	docker build -t "$(docker_repo)/faceanalysis_insightface:$(build_tag)" algorithms/insightface
 
 release-server: build-prod
 	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" \
@@ -25,6 +26,7 @@ release-algorithms: build-algorithms
 	docker push "$(docker_repo)/faceanalysis_facerecognition:$(build_tag)"
 	docker push "$(docker_repo)/faceanalysis_faceapi:$(build_tag)"
 	docker push "$(docker_repo)/faceanalysis_facenet:$(build_tag)"
+	docker push "$(docker_repo)/faceanalysis_insightface:$(build_tag)"
 
 pylint: build-dev
 	docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/faceanalysis
