@@ -4,7 +4,7 @@ services:
 
   nginx:
     restart: always
-    image: faceanalysis_nginx:${BUILD_TAG}
+    image: ${DOCKER_REPO}/faceanalysis_nginx:${BUILD_TAG}
     build: ./nginx
     logging:
       driver: "json-file"
@@ -16,7 +16,7 @@ services:
 
   worker:
     restart: always
-    image: faceanalysis_app:${BUILD_TAG}
+    image: ${DOCKER_REPO}/faceanalysis_app:${BUILD_TAG}
     build:
       context: ./app
       args:
@@ -52,7 +52,7 @@ services:
 
   api:
     restart: always
-    image: faceanalysis_app:${BUILD_TAG}
+    image: ${DOCKER_REPO}/faceanalysis_app:${BUILD_TAG}
     build:
       context: ./app
       args:
@@ -93,12 +93,10 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    ports:
-      - 15672:15672
 
   mysql:
     restart: always
-    image: faceanalysis_mysql:${BUILD_TAG}
+    image: ${DOCKER_REPO}/faceanalysis_mysql:${BUILD_TAG}
     build: ./mysql
     logging:
       driver: "json-file"

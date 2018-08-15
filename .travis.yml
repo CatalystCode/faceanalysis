@@ -21,8 +21,15 @@ jobs:
   - name: Tests
     stage: test
     script: make test
-    before_script: docker pull cwolff/face_recognition
+    before_script: docker pull cwolff/faceanalysis_facerecognition
 
 stages:
 - lint
 - test
+
+deploy:
+  provider: script
+  script: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASSWORD}" && for tag in "${TRAVIS_TAG}" "latest"; do make release-server release-algorithms -e build_tag="${tag}" -e docker_repo="${DOCKER_USER}"; done
+  on:
+    tags: true
+    repo: c-w/faceanalysis

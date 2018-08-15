@@ -1,12 +1,30 @@
-SHELL=/bin/bash
+SHELL = /bin/bash
+build_tag := $(shell grep '^BUILD_TAG=' .env | cut -d'=' -f2-)
+docker_repo := $(shell grep '^DOCKER_REPO=' .env | cut -d'=' -f2-)
 
-.PHONY: build-dev build-prod pylint flake8 mypy lint test
+.PHONY: build-dev build-prod build-algorithms release-server release-algorithms pylint flake8 mypy lint test
 
 build-dev:
-	DEVTOOLS="true" docker-compose build
+	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" DEVTOOLS="true" \
+    docker-compose build
 
 build-prod:
-	docker-compose build
+	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" \
+    docker-compose build
+
+build-algorithms:
+	docker build -t "$(docker_repo)/faceanalysis_facerecognition:$(build_tag)" algorithms/face_recognition
+	docker build -t "$(docker_repo)/faceanalysis_faceapi:$(build_tag)" algorithms/FaceApi
+	docker build -t "$(docker_repo)/faceanalysis_facenet:$(build_tag)" algorithms/facenet
+
+release-server: build-prod
+	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" \
+    docker-compose push
+
+release-algorithms: build-algorithms
+	docker push "$(docker_repo)/faceanalysis_facerecognition:$(build_tag)"
+	docker push "$(docker_repo)/faceanalysis_faceapi:$(build_tag)"
+	docker push "$(docker_repo)/faceanalysis_facenet:$(build_tag)"
 
 pylint: build-dev
 	docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/faceanalysis
