@@ -3,6 +3,9 @@ from typing import List
 from typing import Tuple
 
 from faceanalysis import tasks
+from faceanalysis.domain.errors import DuplicateImage
+from faceanalysis.domain.errors import ImageAlreadyProcessed
+from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.log import get_logger
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
@@ -14,27 +17,11 @@ from faceanalysis.storage import store_image
 logger = get_logger(__name__)
 
 
-class FaceAnalysisError(Exception):
-    pass
-
-
-class ImageDoesNotExist(FaceAnalysisError):
-    pass
-
-
-class ImageAlreadyProcessed(FaceAnalysisError):
-    pass
-
-
-class DuplicateImage(FaceAnalysisError):
-    pass
-
-
 def process_image(img_id: str):
     db = get_database_manager()
     session = db.get_session()
-    img_status = session.query(ImageStatus)\
-        .filter(ImageStatus.img_id == img_id)\
+    img_status = session.query(ImageStatus) \
+        .filter(ImageStatus.img_id == img_id) \
         .first()
     session.close()
 
@@ -51,8 +38,8 @@ def process_image(img_id: str):
 def get_processing_status(img_id: str) -> Tuple[str, str]:
     db = get_database_manager()
     session = db.get_session()
-    img_status = session.query(ImageStatus)\
-        .filter(ImageStatus.img_id == img_id)\
+    img_status = session.query(ImageStatus) \
+        .filter(ImageStatus.img_id == img_id) \
         .first()
     session.close()
 
@@ -67,8 +54,8 @@ def upload_image(stream: IO[bytes], filename: str) -> str:
     img_id = filename[:filename.find('.')]
     db = get_database_manager()
     session = db.get_session()
-    prev_img_upload = session.query(ImageStatus)\
-        .filter(ImageStatus.img_id == img_id)\
+    prev_img_upload = session.query(ImageStatus) \
+        .filter(ImageStatus.img_id == img_id) \
         .first()
     session.close()
 
@@ -90,7 +77,7 @@ def upload_image(stream: IO[bytes], filename: str) -> str:
 def list_images() -> List[str]:
     db = get_database_manager()
     session = db.get_session()
-    query = session.query(Image)\
+    query = session.query(Image) \
         .all()
     image_ids = [image.img_id for image in query]
     session.close()
@@ -102,8 +89,8 @@ def list_images() -> List[str]:
 def lookup_matching_images(img_id: str) -> Tuple[List[str], List[float]]:
     db = get_database_manager()
     session = db.get_session()
-    query = session.query(Match)\
-        .filter(Match.this_img_id == img_id)\
+    query = session.query(Match) \
+        .filter(Match.this_img_id == img_id) \
         .all()
     session.close()
 
