@@ -15,8 +15,7 @@ Image = np.array
 
 def get_face_vectors_batch(
         img_paths: List[str], prealigned: bool) -> List[List[FaceVector]]:
-    identifier = face.Identifier(
-        facenet_model_checkpoint='20180402-114759.pb')
+    identifier = face.Identifier(model_checkpoint='20180402-114759.pb')
 
     images = map(identifier.get_image_from_path, img_paths)
     all_vectors = identifier.vectorize_all(images, prealigned=prealigned)
