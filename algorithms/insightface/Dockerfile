@@ -6,6 +6,6 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY vectorize.py .
-COPY insightface.pb .
+RUN wget "https://redcrossstorage.blob.core.windows.net/images/insightface.pb"
 
 ENTRYPOINT ["python3", "vectorize.py"]

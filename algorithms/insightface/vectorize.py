@@ -19,7 +19,7 @@ def get_face_vectors_batch(
         model_checkpoint='insightface.pb', is_insightface=True)
 
     images = map(identifier.get_image_from_path, img_paths)
-    all_vectors = identifier.vectorize_all(images, prealigned=True)
+    all_vectors = identifier.vectorize_all(images, prealigned=prealigned)
     np_to_list = []
     for vectors in all_vectors:
         np_to_list.append([vector.tolist() for vector in vectors])
