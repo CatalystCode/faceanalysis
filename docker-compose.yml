@@ -15,7 +15,7 @@ services:
       - "${APP_PORT}:80"
 
   worker:
-    restart: always
+    restart: on-failure
     image: ${DOCKER_REPO}/faceanalysis_app:${BUILD_TAG}
     build:
       context: ./app
@@ -79,6 +79,11 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
+      FACE_VECTORIZE_ALGORITHM: ${FACE_VECTORIZE_ALGORITHM}
+      FACE_API_ACCESS_KEY: ${FACE_API_ACCESS_KEY}
+      FACE_API_GROUP_ID: ${FACE_API_GROUP_ID}
+      FACE_API_ENDPOINT: ${FACE_API_ENDPOINT}
+      FACE_API_REGION: ${FACE_API_REGION}
       TOKEN_SECRET_KEY: ${TOKEN_SECRET_KEY}
       DEFAULT_TOKEN_EXPIRATION_SECS: ${DEFAULT_TOKEN_EXPIRATION_SECS}
 

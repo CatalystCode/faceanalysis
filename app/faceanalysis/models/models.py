@@ -62,6 +62,14 @@ class Match(Base):  # type: ignore
     that_img = relationship('Image', foreign_keys=[that_img_id])
     __table_args__ = (UniqueConstraint(
         'this_img_id', 'that_img_id', name='_this_that_uc'),)
+
+
+class FaceApiMapping(Base):  # type: ignore
+    __tablename__ = 'faceapimappings'
+
+    id = Column(Integer, primary_key=True)
+    img_id = Column(String(50), index=True, unique=True)
+    person_id = Column(String(50), index=True, unique=True)
 # pylint: enable=too-few-public-methods
 
 

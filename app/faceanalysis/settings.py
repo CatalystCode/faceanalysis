@@ -45,3 +45,12 @@ STORAGE_SECRET = environ.get('STORAGE_SECRET', '')
 STORAGE_CONTAINER = environ.get('STORAGE_CONTAINER', 'images')
 
 DOCKER_DAEMON = environ.get('DOCKER_DAEMON', 'unix://var/run/docker.sock')
+
+FACE_API_GROUP_ID = environ.get('FACE_API_GROUP_ID', '')
+FACE_API_ACCESS_KEY = environ.get('FACE_API_ACCESS_KEY', '')
+FACE_API_ENDPOINT = environ.get('FACE_API_ENDPOINT')
+if not FACE_API_ENDPOINT and environ.get('FACE_API_REGION'):
+    FACE_API_ENDPOINT = 'https://{region}.api.cognitive.microsoft.com'.format(
+        region=environ.get('FACE_API_REGION', ''))
+if FACE_API_ENDPOINT and not FACE_API_ENDPOINT.endswith('/face/v1.0/'):
+    FACE_API_ENDPOINT += '/face/v1.0/'
