@@ -1,12 +1,16 @@
-SHELL=/bin/bash
+SHELL = /bin/bash
+build_tag := $(shell grep '^BUILD_TAG=' .env | cut -d'=' -f2-)
+docker_repo := $(shell grep '^DOCKER_REPO=' .env | cut -d'=' -f2-)
 
 .PHONY: build-dev build-prod pylint flake8 mypy lint test
 
 build-dev:
-	DEVTOOLS="true" docker-compose build
+	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" DEVTOOLS="true" \
+    docker-compose build
 
 build-prod:
-	docker-compose build
+	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" \
+    docker-compose build
 
 pylint: build-dev
 	docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/faceanalysis
