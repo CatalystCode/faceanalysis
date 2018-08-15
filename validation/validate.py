@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score, recall_score, precision_score
 from sklearn.metrics.pairwise import paired_distances
 from sklearn.model_selection import KFold
 from os.path import join, exists
-from enum import Enum
+from enum import Enum, auto
 from typing import List, Union, Tuple, cast
 
 FaceVector = List[float]
@@ -19,8 +19,8 @@ Label = bool
 
 
 class DistanceMetric(Enum):
-    ANGULAR_DISTANCE = 0
-    EUCLIDEAN_SQUARED = 1
+    ANGULAR_DISTANCE = auto()
+    EUCLIDEAN_SQUARED = auto()
 
 
 class DistanceMetricException(Exception):
@@ -31,6 +31,7 @@ def evaluate(embeddings: np.ndarray,
              labels: np.ndarray,
              num_folds: int,
              distance_metric: DistanceMetric,
+             threshold_metric: str,
              subtract_mean: bool,
              divide_stddev: bool,
              threshold_start: float,
@@ -45,6 +46,7 @@ def evaluate(embeddings: np.ndarray,
                                                 labels,
                                                 num_folds,
                                                 distance_metric,
+                                                threshold_metric,
                                                 subtract_mean,
                                                 divide_stddev)
     return np.mean(accuracy), np.mean(recall), np.mean(precision)
@@ -128,12 +130,20 @@ def _distance_between_embeddings(
 
 def _calculate_best_threshold(thresholds: np.ndarray,
                               dist: np.ndarray,
-                              labels: np.ndarray) -> np.float:
-    acc_train = np.zeros((len(thresholds)))
+                              labels: np.ndarray,
+                              threshold_metric: str) -> np.float:
+
+    if threshold_metric == 'ACCURACY':
+        threshold_score = accuracy_score
+    elif threshold_metric == 'PRECISION':
+        threshold_score = precision_score
+    elif threshold_metric == 'RECALL':
+        threshold_score = recall_score
+    threshold_scores = np.zeros((len(thresholds)))
     for threshold_idx, threshold in enumerate(thresholds):
         predictions = np.less(dist, threshold)
-        acc_train[threshold_idx] = accuracy_score(labels, predictions)
-    best_threshold_index = np.argmax(acc_train)
+        threshold_scores[threshold_idx] = threshold_score(labels, predictions)
+    best_threshold_index = np.argmax(threshold_scores)
     return thresholds[best_threshold_index]
 
 
@@ -143,6 +153,7 @@ def _score_k_fold(thresholds: np.ndarray,
                   labels: np.ndarray,
                   num_folds: int,
                   distance_metric: DistanceMetric,
+                  threshold_metric: str,
                   subtract_mean: bool,
                   divide_stddev: bool) -> Tuple[np.ndarray,
                                                 np.ndarray,
@@ -162,7 +173,8 @@ def _score_k_fold(thresholds: np.ndarray,
                                             distance_metric)
         best_threshold = _calculate_best_threshold(thresholds,
                                                    dist[train_set],
-                                                   labels[train_set])
+                                                   labels[train_set],
+                                                   threshold_metric)
         predictions = np.less(dist[test_set], best_threshold)
         accuracy[fold_idx] = accuracy_score(labels[test_set], predictions)
         recall[fold_idx] = recall_score(labels[test_set], predictions)
@@ -279,6 +291,11 @@ def _parse_arguments():
                         type=float,
                         required=True,
                         help='End value for distance threshold')
+    parser.add_argument('--threshold_metric',
+                        type=str,
+                        required=True,
+                        choices=['ACCURACY', 'PRECISION', 'RECALL'],
+                        help='metric for calculating threshold automatically')
     parser.add_argument(
         '--embedding_size',
         type=int,
@@ -339,6 +356,7 @@ def _main(args: Namespace) -> None:
                                            args.num_folds,
                                            getattr(DistanceMetric,
                                                    args.distance_metric),
+                                           args.threshold_metric,
                                            args.subtract_mean,
                                            args.divide_stddev,
                                            args.threshold_start,
