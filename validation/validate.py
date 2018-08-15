@@ -10,10 +10,10 @@ from os.path import join, exists
 from enum import Enum
 from typing import List, Union, Tuple, cast
 
+FaceVector = List[float]
 Match = Tuple[str, int, int]
 Mismatch = Tuple[str, int, str, int]
 Pair = Union[Match, Mismatch]
-
 Path = Tuple[str, str]
 Label = bool
 
@@ -113,9 +113,9 @@ def _distance_between_embeddings(
     elif distance_metric == DistanceMetric.ANGULAR_DISTANCE:
         # Angular Distance: https://en.wikipedia.org/wiki/Cosine_similarity
         similarity = 1 - paired_distances(
-                            embeddings1,
-                            embeddings2,
-                            metric='cosine')
+            embeddings1,
+            embeddings2,
+            metric='cosine')
         return np.arccos(similarity) / math.pi
     else:
         metrics = [f'{DistanceMetric.__qualname__}.{attr}'
@@ -170,15 +170,78 @@ def _score_k_fold(thresholds: np.ndarray,
     return accuracy, recall, precision
 
 
-def _get_target_faces(embeddings1: List[List[float]],
-                      embeddings2: List[List[float]],
+def _get_target_faces(embeddings1: List[FaceVector],
+                      embeddings2: List[FaceVector],
                       distance_metric: DistanceMetric,
-                      is_match: bool) -> Tuple[List[float], List[float]]:
+                      is_match: bool) -> Tuple[FaceVector, FaceVector]:
     X, Y = zip(*[(emb1, emb2) for emb1 in embeddings1 for emb2 in embeddings2])
     distances = _distance_between_embeddings(X, Y, distance_metric)
     distance_criteria = min if is_match else max
     index, _ = distance_criteria(enumerate(distances), key=lambda x: x[1])
     return X[index], Y[index]
+
+
+def _get_container_metrics(face_vectors: List[List[FaceVector]]) -> Tuple[
+                                                                        int,
+                                                                        int,
+                                                                        float]:
+    num_expected = len(face_vectors)
+    num_missing = sum([1 for i in face_vectors if not i])
+    percentage_missing = 100 * (num_missing / num_expected)
+    return num_expected, num_missing, percentage_missing
+
+
+def _remove_empty_embeddings(args: Namespace,
+                             embeddings: np.ndarray,
+                             labels: np.ndarray) -> Tuple[np.ndarray,
+                                                          np.ndarray]:
+    if args.remove_empty_embeddings:
+        embs_filter = embeddings == np.asarray([[0]*args.embedding_size])
+        empty_indices = np.where(np.all(embs_filter, axis=1))[0]
+        pair_empty_indices = np.asarray([i + 1
+                                         if i % 2 == 0
+                                         else i - 1
+                                         for i in empty_indices])
+        embedding_indices = np.unique(np.concatenate((empty_indices,
+                                                      pair_empty_indices)))
+        embeddings = np.delete(embeddings, embedding_indices, axis=0)
+        label_indices = np.unique(embedding_indices // 2)
+        labels = np.delete(labels, label_indices, axis=0)
+    return embeddings, labels
+
+
+def _prealigned(args: Namespace, num_matches_mismatches: int,
+                face_vectors: List[List[FaceVector]]) -> np.ndarray:
+    if args.prealigned:
+        embeddings = np.asarray([[0] * args.embedding_size
+                                 if not embedding else embedding[0]
+                                 for embedding in face_vectors])
+    else:
+        embeddings = []
+        is_match = False
+        for i, (embs1, embs2) in enumerate(zip(face_vectors[0::2],
+                                               face_vectors[1::2])):
+            if i % num_matches_mismatches == 0:
+                is_match = not is_match
+
+            embs1, embs2 = _get_target_faces(
+                embs1 or [[0] * args.embedding_size],
+                embs2 or [[0] * args.embedding_size],
+                getattr(DistanceMetric, args.distance_metric),
+                is_match)
+            embeddings += [embs1, embs2]
+        embeddings = np.asarray(embeddings)
+    return embeddings
+
+
+def _handle_flags(args: Namespace,
+                  num_matches_mismatches: int,
+                  face_vectors: List[List[FaceVector]],
+                  labels: np.ndarray) -> Tuple[np.ndarray,
+                                               np.ndarray]:
+    embeddings = _prealigned(args, num_matches_mismatches, face_vectors)
+    embeddings, labels = _remove_empty_embeddings(args, embeddings, labels)
+    return embeddings, labels
 
 
 def _parse_arguments():
@@ -227,6 +290,11 @@ def _parse_arguments():
         required=True,
         help='Step size for iterating in cross validation search.')
     parser.add_argument(
+        '--remove_empty_embeddings',
+        action='store_true',
+        help='Instead of a default encoding for images where\
+faces are not detected, remove them')
+    parser.add_argument(
         '--subtract_mean',
         action='store_true',
         help="Subtract mean of embeddings before distance calculation.")
@@ -256,30 +324,21 @@ def _main(args: Namespace) -> None:
                                    auto_remove=True,
                                    environment=prealigned_environment_var)
     face_vectors = json.loads(stdout.decode('utf-8').strip())['faceVectors']
-    distance_metric = getattr(DistanceMetric, args.distance_metric)
-    if prealigned_environment_var:
-        embeddings = np.asarray([[0] * args.embedding_size
-                                 if not embedding else embedding[0]
-                                 for embedding in face_vectors])
-    else:
-        embeddings = []
-        is_match = False
-        for i, (embs1, embs2) in enumerate(zip(face_vectors[0::2],
-                                               face_vectors[1::2])):
-            if i % num_matches_mismatches == 0:
-                is_match = not is_match
-            embs1, embs2 = _get_target_faces(
-                                embs1 or [[0] * args.embedding_size],
-                                embs2 or [[0] * args.embedding_size],
-                                distance_metric,
-                                is_match)
-            embeddings += [embs1, embs2]
-        embeddings = np.asarray(embeddings)
-    labels = np.asarray(labels)
+    num_expected, num_missing, percentage_missing = _get_container_metrics(
+        face_vectors)
+    print(f'Number of expected face vectors: {num_expected}')
+    print(f'Number of missing face vectors: {num_missing}')
+    print(f'Percentage missing: {percentage_missing}')
+
+    embeddings, labels = _handle_flags(args,
+                                       num_matches_mismatches,
+                                       face_vectors,
+                                       np.asarray(labels))
     accuracy, recall, precision = evaluate(embeddings,
                                            labels,
                                            args.num_folds,
-                                           distance_metric,
+                                           getattr(DistanceMetric,
+                                                   args.distance_metric),
                                            args.subtract_mean,
                                            args.divide_stddev,
                                            args.threshold_start,
