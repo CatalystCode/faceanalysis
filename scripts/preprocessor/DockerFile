@@ -2,7 +2,8 @@ FROM python:3.6
 
 WORKDIR /app
 
-RUN pip3 install --no-cache-dir numpy==1.11.3 scipy==1.0.0 opencv-python==3.4.0.12
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY main.py .
 COPY processor.py .
