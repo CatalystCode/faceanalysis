@@ -1,9 +1,11 @@
-FROM python:3.5-slim
+FROM python:3.6-slim
 
 RUN apt-get -y update \
     && apt-get install -y \
         mysql-client \
         python3-numpy \
+        curl \
+        jq \
     && apt-get clean \
     && rm -rf /tmp/* /var/tmp/*
 

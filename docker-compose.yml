@@ -4,7 +4,7 @@ services:
 
   nginx:
     restart: always
-    image: faceanalysis_nginx:${BUILD_TAG}
+    image: ${DOCKER_REPO}/faceanalysis_nginx:${BUILD_TAG}
     build: ./nginx
     logging:
       driver: "json-file"
@@ -16,7 +16,7 @@ services:
 
   worker:
     restart: always
-    image: faceanalysis_app:${BUILD_TAG}
+    image: ${DOCKER_REPO}/faceanalysis_app:${BUILD_TAG}
     build:
       context: ./app
       args:
@@ -24,6 +24,7 @@ services:
     command: ["python3", "worker.py"]
     depends_on:
       - mysql
+      - rabbitmq
     logging:
       driver: "json-file"
       options:
@@ -38,18 +39,20 @@ services:
       LOGGING_LEVEL: ${LOGGING_LEVEL}
       ALLOWED_IMAGE_FILE_EXTENSIONS: ${ALLOWED_IMAGE_FILE_EXTENSIONS}
       IMAGE_PROCESSOR_QUEUE: ${IMAGE_PROCESSOR_QUEUE}
+      DOCKER_DAEMON: ${DOCKER_DAEMON}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       MYSQL_HOST: mysql
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       DISTANCE_SCORE_THRESHOLD: ${DISTANCE_SCORE_THRESHOLD}
       FACE_VECTORIZE_ALGORITHM: ${FACE_VECTORIZE_ALGORITHM}
-    env_file:
-      - ./secrets.env
 
   api:
     restart: always
-    image: faceanalysis_app:${BUILD_TAG}
+    image: ${DOCKER_REPO}/faceanalysis_app:${BUILD_TAG}
     build:
       context: ./app
       args:
@@ -57,6 +60,7 @@ services:
     depends_on:
       - worker
       - mysql
+      - rabbitmq
     logging:
       driver: "json-file"
       options:
@@ -68,18 +72,31 @@ services:
       LOGGING_LEVEL: ${LOGGING_LEVEL}
       ALLOWED_IMAGE_FILE_EXTENSIONS: ${ALLOWED_IMAGE_FILE_EXTENSIONS}
       IMAGE_PROCESSOR_QUEUE: ${IMAGE_PROCESSOR_QUEUE}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       MYSQL_HOST: mysql
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       TOKEN_SECRET_KEY: ${TOKEN_SECRET_KEY}
       DEFAULT_TOKEN_EXPIRATION_SECS: ${DEFAULT_TOKEN_EXPIRATION_SECS}
-    env_file:
-      - ./secrets.env
+
+  rabbitmq:
+    restart: always
+    image: rabbitmq:3.7.7-management
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
 
   mysql:
     restart: always
-    image: faceanalysis_mysql:${BUILD_TAG}
+    image: ${DOCKER_REPO}/faceanalysis_mysql:${BUILD_TAG}
     build: ./mysql
     logging:
       driver: "json-file"

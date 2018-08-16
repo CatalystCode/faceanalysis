@@ -1,5 +1,8 @@
 # Custom ignore
 images/output
+.DS_Store
+.vscode
+.vs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

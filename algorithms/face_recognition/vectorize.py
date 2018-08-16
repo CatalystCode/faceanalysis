@@ -1,23 +1,47 @@
-import json
-import face_recognition as fr
+from typing import Iterable
+from typing import List
+from typing import Optional
+
+from face_recognition import face_encodings
+from face_recognition import face_locations
+from face_recognition import load_image_file
+import numpy as np
+
+FaceVector = List[float]
+Image = np.array
 
 
-def get_face_vectors(img_path):
-    img = fr.load_image_file(img_path)
-    face_locations = fr.face_locations(img)
+def get_face_embedding(face: Image) -> Optional[FaceVector]:
+    cropped_features = face_encodings(face)
+    if not cropped_features:
+        return None
+
+    face_vector = cropped_features[0]
+    return face_vector.tolist()
+
+
+def find_faces(img: Image) -> Iterable[Image]:
+    for top, right, bottom, left in face_locations(img):
+        yield img[top:bottom, left:right]
+
+
+def get_face_vectors(img_path: str, prealigned: bool) -> List[FaceVector]:
+    img = load_image_file(img_path)
+    faces = [img] if prealigned else find_faces(img)
+
     face_vectors = []
-    for top, right, bottom, left in face_locations:
-        cropped_img = img[top:bottom, left:right]
-        cropped_features = fr.face_encodings(cropped_img)
-        if cropped_features:
-            face_vector = cropped_features[0]
-            face_vectors.append(face_vector.tolist())
+    for face in faces:
+        face_vector = get_face_embedding(face)
+        if face_vector:
+            face_vectors.append(face_vector)
     return face_vectors
 
 
 def _cli():
     from argparse import ArgumentParser
     from argparse import FileType
+    from os import getenv
+    import json
 
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('images', type=FileType('r'), nargs='+')
@@ -28,9 +52,11 @@ def _cli():
         image.close()
         image_paths.append(image.name)
 
+    prealigned = getenv('PREALIGNED') == 'true'
+
     # naive implementation for demo purposes, could also batch process images
-    vectors = {image_path: get_face_vectors(image_path)
-               for image_path in image_paths}
+    vectors = [get_face_vectors(image_path, prealigned)
+               for image_path in image_paths]
 
     print(json.dumps({'faceVectors': vectors}))
 

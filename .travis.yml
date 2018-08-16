@@ -3,9 +3,33 @@ language: generic
 services:
 - docker
 
-before_install:
-- openssl aes-256-cbc -K $encrypted_e08e3836e1cc_key -iv $encrypted_e08e3836e1cc_iv
-  -in ./.travis/secrets.env.enc -out ./secrets.env -d
+jobs:
+  include:
 
-script:
-- ./run-test.sh
+  - name: PyLint
+    stage: lint
+    script: make pylint
+
+  - name: Flake8
+    stage: lint
+    script: make flake8
+
+  - name: MyPy
+    stage: lint
+    script: make mypy
+
+  - name: Tests
+    stage: test
+    script: make test
+    before_script: docker pull cwolff/faceanalysis_facerecognition
+
+stages:
+- lint
+- test
+
+deploy:
+  provider: script
+  script: docker login -u "${DOCKER_USER}" -p "${DOCKER_PASSWORD}" && for tag in "${TRAVIS_TAG}" "latest"; do make release-server release-algorithms -e build_tag="${tag}" -e docker_repo="${DOCKER_USER}"; done
+  on:
+    tags: true
+    repo: c-w/faceanalysis

@@ -14,7 +14,7 @@ Base = declarative_base()
 
 
 # pylint: disable=too-few-public-methods
-class User(Base):
+class User(Base):  # type: ignore
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
@@ -22,7 +22,7 @@ class User(Base):
     password_hash = Column(String(128))
 
 
-class ImageStatus(Base):
+class ImageStatus(Base):  # type: ignore
     __tablename__ = 'imagestatuses'
 
     id = Column(Integer, primary_key=True)
@@ -31,7 +31,7 @@ class ImageStatus(Base):
     error_msg = Column(String(50), default=None)
 
 
-class Image(Base):
+class Image(Base):  # type: ignore
     __tablename__ = 'images'
 
     id = Column(Integer, primary_key=True)
@@ -40,7 +40,7 @@ class Image(Base):
     time_created = Column(DateTime(timezone=True), server_default=func.now())
 
 
-class FeatureMapping(Base):
+class FeatureMapping(Base):  # type: ignore
     __tablename__ = 'featuremappings'
 
     id = Column(Integer, primary_key=True)
@@ -50,7 +50,7 @@ class FeatureMapping(Base):
     img = relationship('Image', back_populates='feature_mappings')
 
 
-class Match(Base):
+class Match(Base):  # type: ignore
     __tablename__ = 'matches'
 
     id = Column(Integer, primary_key=True)

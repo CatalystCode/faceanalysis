@@ -1,14 +1,16 @@
+from typing import IO
+from typing import List
+from typing import Tuple
+
+from faceanalysis import tasks
 from faceanalysis.log import get_logger
 from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import Image
 from faceanalysis.models.models import ImageStatus
 from faceanalysis.models.models import Match
-from faceanalysis.queue_poll import create_queue_service
-from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
 from faceanalysis.storage import store_image
 
-queue_service = create_queue_service(IMAGE_PROCESSOR_QUEUE)
 logger = get_logger(__name__)
 
 
@@ -28,28 +30,25 @@ class DuplicateImage(FaceAnalysisError):
     pass
 
 
-def process_image(img_id):
+def process_image(img_id: str):
     db = get_database_manager()
     session = db.get_session()
     img_status = session.query(ImageStatus)\
         .filter(ImageStatus.img_id == img_id)\
         .first()
+    session.close()
 
     if img_status is None:
-        session.close()
         raise ImageDoesNotExist()
 
     if img_status.status != ImageStatusEnum.uploaded.name:
-        session.close()
         raise ImageAlreadyProcessed()
 
-    queue_service.put_message(IMAGE_PROCESSOR_QUEUE, img_id)
-    img_status.status = ImageStatusEnum.on_queue.name
-    db.safe_commit(session)
+    tasks.process_image.delay(img_id)
     logger.debug('Image %s queued for processing', img_id)
 
 
-def get_processing_status(img_id):
+def get_processing_status(img_id: str) -> Tuple[str, str]:
     db = get_database_manager()
     session = db.get_session()
     img_status = session.query(ImageStatus)\
@@ -64,7 +63,7 @@ def get_processing_status(img_id):
     return img_status.status, img_status.error_msg
 
 
-def upload_image(stream, filename):
+def upload_image(stream: IO[bytes], filename: str) -> str:
     img_id = filename[:filename.find('.')]
     db = get_database_manager()
     session = db.get_session()
@@ -85,8 +84,10 @@ def upload_image(stream, filename):
     db.safe_commit(session)
     logger.debug('Image %s uploaded', img_id)
 
+    return img_id
 
-def list_images():
+
+def list_images() -> List[str]:
     db = get_database_manager()
     session = db.get_session()
     query = session.query(Image)\
@@ -98,7 +99,7 @@ def list_images():
     return image_ids
 
 
-def lookup_matching_images(img_id):
+def lookup_matching_images(img_id: str) -> Tuple[List[str], List[float]]:
     db = get_database_manager()
     session = db.get_session()
     query = session.query(Match)\

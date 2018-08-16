@@ -1,4 +1,6 @@
 from http import HTTPStatus
+from typing import Tuple
+from typing import Union
 
 from flask import Flask
 from flask import g
@@ -13,23 +15,33 @@ from faceanalysis import auth
 from faceanalysis import domain
 from faceanalysis.settings import ALLOWED_EXTENSIONS
 
+JsonResponse = Union[dict, Tuple[dict, int]]
+
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 api = Api(app)
 basic_auth = HTTPBasicAuth()
+
+ERROR_USER_ALREADY_REGISTERED = 'User already registered'
+ERROR_IMAGE_ALREADY_PROCESSED = 'Image previously placed on queue'
+ERROR_IMAGE_DOES_NOT_EXIST = 'Image not yet uploaded'
+ERROR_BAD_IMAGE_FORMAT = ('Image upload failed: please use one of the '
+                          'following extensions --> {}'
+                          .format(ALLOWED_EXTENSIONS))
+ERROR_DUPLICATE_IMAGE = 'Image upload failed: image previously uploaded'
 
 
 # pylint: disable=no-self-use
 class AuthenticationToken(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def get(self):
+    def get(self) -> JsonResponse:
         token = auth.generate_auth_token(g.user)
-        return {'token': token.decode('ascii')}
+        return {'token': token}
 
 
 class RegisterUser(Resource):
-    def post(self):
+    def post(self) -> JsonResponse:
         parser = RequestParser()
         parser.add_argument('username',
                             required=True,
@@ -42,9 +54,10 @@ class RegisterUser(Resource):
         password = args['password']
 
         try:
-            username = auth.register_user(username, password)
+            auth.register_user(username, password)
         except auth.DuplicateUser:
-            return 'User already registered', HTTPStatus.BAD_REQUEST.value
+            return {'error_msg': ERROR_USER_ALREADY_REGISTERED},\
+                   HTTPStatus.BAD_REQUEST.value
 
         return {'username': username}, HTTPStatus.CREATED.value
 
@@ -52,7 +65,7 @@ class RegisterUser(Resource):
 class ProcessImg(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def post(self):
+    def post(self) -> JsonResponse:
         parser = RequestParser()
         parser.add_argument('img_id',
                             required=True,
@@ -63,18 +76,20 @@ class ProcessImg(Resource):
         try:
             domain.process_image(img_id)
         except domain.ImageAlreadyProcessed:
-            return ('Image previously placed on queue',
-                    HTTPStatus.BAD_REQUEST.value)
+            return {'error_msg': ERROR_IMAGE_ALREADY_PROCESSED},\
+                    HTTPStatus.BAD_REQUEST.value
         except domain.ImageDoesNotExist:
-            return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
+            return {'error_msg': ERROR_IMAGE_DOES_NOT_EXIST},\
+                   HTTPStatus.BAD_REQUEST.value
 
-        return 'OK', HTTPStatus.OK.value
+        return {'img_id': img_id}
 
-    def get(self, img_id):
+    def get(self, img_id: str) -> JsonResponse:
         try:
             status, error = domain.get_processing_status(img_id)
         except domain.ImageDoesNotExist:
-            return 'Image not yet uploaded', HTTPStatus.BAD_REQUEST.value
+            return {'error_msg': ERROR_IMAGE_DOES_NOT_EXIST},\
+                   HTTPStatus.BAD_REQUEST.value
 
         return {'status': status, 'error_msg': error}
 
@@ -82,7 +97,7 @@ class ProcessImg(Resource):
 class ImgUpload(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def post(self):
+    def post(self) -> JsonResponse:
         parser = RequestParser()
         parser.add_argument('image',
                             type=FileStorage,
@@ -94,23 +109,22 @@ class ImgUpload(Resource):
         filename = secure_filename(image.filename)
 
         if not any(filename.endswith(ext) for ext in ALLOWED_EXTENSIONS):
-            return ('Image upload failed: please use one of the '
-                    'following extensions --> {}'
-                    .format(ALLOWED_EXTENSIONS)), HTTPStatus.BAD_REQUEST.value
+            return {'error_msg': ERROR_BAD_IMAGE_FORMAT},\
+                   HTTPStatus.BAD_REQUEST.value
 
         try:
-            domain.upload_image(image.stream, filename)
+            img_id = domain.upload_image(image.stream, filename)
         except domain.DuplicateImage:
-            return ('Image upload failed: image previously uploaded',
-                    HTTPStatus.BAD_REQUEST.value)
+            return {'error_msg': ERROR_DUPLICATE_IMAGE},\
+                    HTTPStatus.BAD_REQUEST.value
 
-        return 'OK', HTTPStatus.OK.value
+        return {'img_id': img_id}
 
 
 class ImgMatchList(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def get(self, img_id):
+    def get(self, img_id: str) -> JsonResponse:
         images, distances = domain.lookup_matching_images(img_id)
         return {'imgs': images, 'distances': distances}
 
@@ -118,14 +132,14 @@ class ImgMatchList(Resource):
 class ImgList(Resource):
     method_decorators = [basic_auth.login_required]
 
-    def get(self):
+    def get(self) -> JsonResponse:
         images = domain.list_images()
         return {'imgs': images}
 # pylint: enable=no-self-use
 
 
 @basic_auth.verify_password
-def verify_password(username_or_token, password):
+def verify_password(username_or_token: str, password: str) -> bool:
     try:
         user = auth.load_user_from_auth_token(username_or_token)
     except auth.InvalidAuthToken:
