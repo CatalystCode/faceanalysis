@@ -69,7 +69,7 @@ class FaceApiMapping(Base):  # type: ignore
 
     id = Column(Integer, primary_key=True)
     img_id = Column(String(50), index=True, unique=True)
-    person_id = Column(String(50), index=True, unique=True)
+    face_id = Column(String(50), index=True, unique=True)
 # pylint: enable=too-few-public-methods
 
 

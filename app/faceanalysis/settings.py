@@ -46,7 +46,7 @@ STORAGE_CONTAINER = environ.get('STORAGE_CONTAINER', 'images')
 
 DOCKER_DAEMON = environ.get('DOCKER_DAEMON', 'unix://var/run/docker.sock')
 
-FACE_API_GROUP_ID = environ.get('FACE_API_GROUP_ID', '')
+FACE_API_MODEL_ID = environ.get('FACE_API_MODEL_ID', '')
 FACE_API_ACCESS_KEY = environ.get('FACE_API_ACCESS_KEY', '')
 FACE_API_ENDPOINT = environ.get('FACE_API_ENDPOINT')
 if not FACE_API_ENDPOINT and environ.get('FACE_API_REGION'):
