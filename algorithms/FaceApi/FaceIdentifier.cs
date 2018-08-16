@@ -11,7 +11,7 @@ namespace FaceApi
 {
     public interface IFaceIdentifier
     {
-        Task<bool> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2);
+        Task<bool?> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2);
         Task<string> Train(string trainSetRoot);
     }
 
@@ -38,7 +38,7 @@ namespace FaceApi
         abstract protected Task<bool> Predict(string groupId, double matchThreshold, IList<Guid> faces1, IList<Guid> faces2);
         abstract protected Task Train(string trainSetRoot, string groupId);
 
-        public async Task<bool> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2)
+        public async Task<bool?> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2)
         {
             var allFaces = await Task.WhenAll(DetectFaces(imagePath1), DetectFaces(imagePath2));
             var faces1 = allFaces[0];
@@ -46,7 +46,7 @@ namespace FaceApi
 
             if (faces1.Count == 0 || faces2.Count == 0)
             {
-                return false;
+                return null;
             }
 
             return await Predict(groupId, matchThreshold, faces1, faces2);

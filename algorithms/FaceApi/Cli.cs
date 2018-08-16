@@ -26,7 +26,7 @@ namespace FaceApi
                 var trainedGroupId = await faceIdentifier.Train(trainSetRoot);
                 await Console.Out.WriteLineAsync(trainedGroupId ?? "Training failed");
             }
-            else if (settings.TryParseForEvaluation(out string evaluationGroupId, out string pairsTxtPath, out string imagesRoot))
+            else if (settings.TryParseForEvaluation(out string evaluationGroupId, out string pairsTxtPath, out string imagesRoot, out bool ignoreMissingEmbeddings))
             {
                 var pairs = new Pairs(pairsTxtPath, imagesRoot).Parse();
                 var stats = new PairStats();
@@ -35,7 +35,14 @@ namespace FaceApi
                     try
                     {
                         var areSame = await faceIdentifier.Predict(evaluationGroupId, matchThreshold, pair.ImagePath1, pair.ImagePath2);
-                        stats.Record(areSame, pair.AreSame);
+                        if (areSame.HasValue)
+                        {
+                            stats.Record(areSame.Value, pair.AreSame);
+                        }
+                        else if (!ignoreMissingEmbeddings)
+                        {
+                            stats.Record(!pair.AreSame, pair.AreSame);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -50,7 +57,7 @@ namespace FaceApi
             else if (settings.TryParseForPrediction(out string predictionGroupId, out string imagePath1, out string imagePath2))
             {
                 var areSame = await faceIdentifier.Predict(predictionGroupId, matchThreshold, imagePath1, imagePath2);
-                await Console.Out.WriteLineAsync(areSame.ToString());
+                await Console.Out.WriteLineAsync(areSame.HasValue ? areSame.ToString() : "Failed to find faces");
             }
             else
             {
@@ -97,19 +104,21 @@ namespace FaceApi
             return true;
         }
 
-        public bool TryParseForEvaluation(out string groupId, out string pairsTxtPath, out string trainSetRoot)
+        public bool TryParseForEvaluation(out string groupId, out string pairsTxtPath, out string trainSetRoot, out bool ignoreMissingEmbeddings)
         {
             if (!Evaluation || GroupId == null || Args.Length != 2 || !File.Exists(Args[0]) || !Directory.Exists(Args[1]))
             {
                 groupId = null;
                 pairsTxtPath = null;
                 trainSetRoot = null;
+                ignoreMissingEmbeddings = IgnoreMissingEmbeddings;
                 return false;
             }
 
             groupId = GroupId;
             pairsTxtPath = Args[0];
             trainSetRoot = Args[1];
+            ignoreMissingEmbeddings = IgnoreMissingEmbeddings;
             return true;
         }
 
@@ -150,6 +159,11 @@ namespace FaceApi
         private bool Evaluation
         {
             get => Environment.GetEnvironmentVariable("FACE_API_EVALUATE") == "true";
+        }
+
+        private bool IgnoreMissingEmbeddings
+        {
+            get => Environment.GetEnvironmentVariable("FACE_API_IGNORE_MISSING_EMBEDDINGS") == "true";
         }
 
         private string ApiKey
