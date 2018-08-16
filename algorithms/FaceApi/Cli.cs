@@ -15,13 +15,11 @@ namespace FaceApi
         static async Task MainAsync(string[] args)
         {
             var settings = new Settings(args);
-            if (!settings.TryParse(out string apiKey, out string apiEndpoint, out double matchThreshold, out PredictionMode predictionMode))
+            if (!settings.TryParse(out IFaceIdentifier faceIdentifier, out double matchThreshold))
             {
                 await Console.Error.WriteLineAsync("Missing api-key and api-endpoint settings");
                 return;
             }
-
-            var faceIdentifier = new FaceIdentifier(apiKey, apiEndpoint, predictionMode);
 
             if (settings.TryParseForTraining(out string trainSetRoot))
             {
@@ -73,21 +71,17 @@ namespace FaceApi
             Args = args;
         }
 
-        public bool TryParse(out string apiKey, out string apiEndpoint, out double matchThreshold, out PredictionMode predictionMode)
+        public bool TryParse(out IFaceIdentifier faceIdentifier, out double matchThreshold)
         {
-            if (ApiKey == null || ApiEndpoint == null)
+            if (ApiKey == null || ApiEndpoint == null || FaceIdentifier == null)
             {
-                apiKey = null;
-                apiEndpoint = null;
+                faceIdentifier = null;
                 matchThreshold = DefaultMatchThreshold;
-                predictionMode = DefaultPredictionMode;
                 return false;
             }
 
-            apiKey = ApiKey;
-            apiEndpoint = ApiEndpoint;
+            faceIdentifier = FaceIdentifier;
             matchThreshold = MatchThreshold;
-            predictionMode = PredictionMode;
             return true;
         }
 
@@ -133,6 +127,24 @@ namespace FaceApi
             imagePath1 = Args[0];
             imagePath2 = Args[1];
             return true;
+        }
+
+        private IFaceIdentifier FaceIdentifier
+        {
+            get
+            {
+                switch (PredictionMode)
+                {
+                    case PredictionMode.FindSimilar:
+                        return new FindSimilarFaceIdentifier(ApiKey, ApiEndpoint);
+                    case PredictionMode.Identify:
+                        return new IdentifyFaceIdentifier(ApiKey, ApiEndpoint);
+                    case PredictionMode.Verify:
+                        return new VerifyFaceIdentifier(ApiKey, ApiEndpoint);
+                    default:
+                        return null;
+                }
+            }
         }
 
         private bool Evaluation
@@ -199,5 +211,12 @@ namespace FaceApi
         {
             get => Environment.GetEnvironmentVariable("FACE_API_GROUP_ID");
         }
+    }
+
+    enum PredictionMode
+    {
+        FindSimilar,
+        Identify,
+        Verify
     }
 }
