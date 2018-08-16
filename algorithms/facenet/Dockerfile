@@ -6,6 +6,6 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY vectorize.py .
-COPY 20180402-114759.pb .
+RUN wget "https://redcrossstorage.blob.core.windows.net/images/facenet_model.pb"
 
 ENTRYPOINT ["python3", "vectorize.py"]
