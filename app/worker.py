@@ -1,4 +1,6 @@
 from faceanalysis.log import get_logger
+from faceanalysis.models.database_manager import get_database_manager
+from faceanalysis.models.models import init_models
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.settings import IMAGE_PROCESSOR_CONCURRENCY
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE
@@ -12,6 +14,9 @@ def _main():
     if FACE_VECTORIZE_ALGORITHM == 'FaceApi':
         logger.warning('FaceApi backend detected: not starting Celery worker')
         return
+
+    db = get_database_manager()
+    init_models(db.engine)
 
     celery.worker_main([
         '--queues={}'.format(IMAGE_PROCESSOR_QUEUE),
