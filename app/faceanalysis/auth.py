@@ -3,8 +3,8 @@ from itsdangerous import SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from passlib.apps import custom_app_context as password_context
 
-from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.models import User
+from faceanalysis.models.models import get_db_session
 from faceanalysis.settings import TOKEN_EXPIRATION
 from faceanalysis.settings import TOKEN_SECRET_KEY
 
@@ -42,22 +42,18 @@ def load_user_from_auth_token(token: str) -> User:
     except (BadSignature, SignatureExpired):
         raise InvalidAuthToken()
 
-    db = get_database_manager()
-    session = db.get_session()
-    user = session.query(User)\
-        .filter(User.id == data['id'])\
-        .first()
-    session.close()
+    with get_db_session() as session:
+        user = session.query(User)\
+            .filter(User.id == data['id'])\
+            .first()
     return user
 
 
 def load_user(username: str, password: str) -> User:
-    db = get_database_manager()
-    session = db.get_session()
-    user = session.query(User) \
-        .filter(User.username == username) \
-        .first()
-    session.close()
+    with get_db_session() as session:
+        user = session.query(User) \
+            .filter(User.username == username) \
+            .first()
 
     if not user:
         raise UserDoesNotExist()
@@ -69,12 +65,10 @@ def load_user(username: str, password: str) -> User:
 
 
 def register_user(username: str, password: str):
-    db = get_database_manager()
-    session = db.get_session()
-    user = session.query(User) \
-        .filter(User.username == username) \
-        .first()
-    session.close()
+    with get_db_session() as session:
+        user = session.query(User) \
+            .filter(User.username == username) \
+            .first()
 
     if user is not None:
         raise DuplicateUser()
@@ -82,6 +76,6 @@ def register_user(username: str, password: str):
     user = User()
     user.username = username
     user.password_hash = password_context.encrypt(password)
-    session = db.get_session()
-    session.add(user)
-    db.safe_commit(session)
+
+    with get_db_session(commit=True) as session:
+        session.add(user)

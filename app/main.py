@@ -2,7 +2,6 @@
 
 from faceanalysis.api import app as application
 from faceanalysis.log import get_logger
-from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.models import delete_models
 from faceanalysis.models.models import init_models
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
@@ -34,13 +33,11 @@ class Commands:
 
     @classmethod
     def createdb(cls):
-        db = get_database_manager()
-        init_models(db.engine)
+        init_models()
 
     @classmethod
     def dropdb(cls):
-        db = get_database_manager()
-        delete_models(db.engine)
+        delete_models()
 
 
 def _main(command: str):

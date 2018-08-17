@@ -10,7 +10,6 @@ from unittest import TestCase
 from unittest import skipIf
 
 from faceanalysis.api import app
-from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import delete_models
 from faceanalysis.models.models import init_models
@@ -26,8 +25,7 @@ class ApiTestCase(TestCase):
     def setUp(self):
         app.testing = True
         self.app = app.test_client()
-        self.db = get_database_manager()
-        init_models(self.db.engine)
+        init_models()
         username = 'username'
         password = 'password'
         self._register_default_user(username, password)
@@ -35,7 +33,7 @@ class ApiTestCase(TestCase):
         self.headers = _get_basic_auth_headers(token, 'any value')
 
     def tearDown(self):
-        delete_models(self.db.engine)
+        delete_models()
 
     @classmethod
     def tearDownClass(cls):

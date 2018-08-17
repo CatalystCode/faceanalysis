@@ -11,9 +11,9 @@ from faceanalysis import storage
 from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.log import get_logger
-from faceanalysis.models.database_manager import get_database_manager
 from faceanalysis.models.image_status_enum import ImageStatusEnum
 from faceanalysis.models.models import FaceApiMapping
+from faceanalysis.models.models import get_db_session
 from faceanalysis.settings import FACE_API_ACCESS_KEY
 from faceanalysis.settings import FACE_API_ENDPOINT
 from faceanalysis.settings import FACE_API_MODEL_ID
@@ -98,15 +98,12 @@ def upload_image(stream: IO[bytes], filename: str) -> str:
     model_id, _ = _get_model_id()
     img_id = filename[:filename.find('.')]
 
-    db = get_database_manager()
-    session = db.get_session()
-
-    mapping = session.query(FaceApiMapping)\
-        .filter(FaceApiMapping.img_id == img_id)\
-        .first()
+    with get_db_session() as session:
+        mapping = session.query(FaceApiMapping)\
+            .filter(FaceApiMapping.img_id == img_id)\
+            .first()
 
     if mapping:
-        session.close()
         raise DuplicateImage()
 
     storage.store_image(stream, filename)
@@ -122,33 +119,27 @@ def upload_image(stream: IO[bytes], filename: str) -> str:
             user_data=img_id)
         face_id = response['persistedFaceId']
 
-    mapping = FaceApiMapping(face_id=face_id, img_id=img_id)
-    session.add(mapping)
-    db.safe_commit(session)
+    with get_db_session(commit=True) as session:
+        mapping = FaceApiMapping(face_id=face_id, img_id=img_id)
+        session.add(mapping)
 
     return img_id
 
 
 def list_images() -> List[str]:
-    db = get_database_manager()
-    session = db.get_session()
-    mappings = session.query(FaceApiMapping)\
-        .all()
-    session.close()
-
-    image_ids = [mapping.img_id for mapping in mappings]
+    with get_db_session() as session:
+        image_ids = [mapping.img_id
+                     for mapping in session.query(FaceApiMapping).all()]
 
     logger.debug('Got %d images', len(image_ids))
     return image_ids
 
 
 def _fetch_faces_for_person(img_id: str) -> Tuple[List[str], str]:
-    db = get_database_manager()
-    session = db.get_session()
-    mapping = session.query(FaceApiMapping)\
-        .filter(FaceApiMapping.img_id == img_id) \
-        .first()
-    session.close()
+    with get_db_session() as session:
+        mapping = session.query(FaceApiMapping)\
+            .filter(FaceApiMapping.img_id == img_id) \
+            .first()
 
     if not mapping:
         logger.debug('No mapping found for image %s', img_id)
@@ -188,12 +179,10 @@ def _fetch_matching_faces(face_ids: List[str]) -> Dict[str, float]:
 
 
 def _fetch_mappings_for_faces(face_ids: Iterable[str]) -> List[FaceApiMapping]:
-    db = get_database_manager()
-    session = db.get_session()
-    mappings = session.query(FaceApiMapping) \
-        .filter(FaceApiMapping.face_id.in_(face_ids)) \
-        .all()
-    session.close()
+    with get_db_session() as session:
+        mappings = session.query(FaceApiMapping) \
+            .filter(FaceApiMapping.face_id.in_(face_ids)) \
+            .all()
     return mappings
 
 
