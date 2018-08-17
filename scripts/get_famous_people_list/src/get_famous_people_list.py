@@ -1,5 +1,6 @@
 import gzip
 from typing import List
+from typing import Set
 
 import grequests
 import progressbar as pb
@@ -25,11 +26,10 @@ def get_pages(demonym_file: str) -> List[str]:
     result = requests.get(MAIN_WIKI)
     soup = BeautifulSoup(result.content, 'html.parser')
 
-    demonyms = set()
     with open(demonym_file, encoding='utf-8') as fp:
         demonyms = {entity.strip() for entity in fp}
 
-    pages = set()
+    pages: Set[str] = set()
     first_ul = soup.find_all('ul')[1]
     for li_tag in first_ul.find_all('li'):
         if li_tag.text in demonyms:
@@ -58,16 +58,22 @@ def get_people(pages: List[str], output_file: str):
                 soup.find('div', {'class': 'navbox'}).decompose()
             div = soup.find('div', {'id': 'mw-content-text'})
             for li_tag in div.find_all('li'):
-                if li_tag.a and li_tag.a.has_attr('title') and li_tag.a.has_attr('href'):
+                if not li_tag.a:
+                    continue
+                if li_tag.a.has_attr('title') and li_tag.a.has_attr('href'):
                     doc = NLP_MODEL(li_tag.a.text)
                     for ent in doc.ents:
                         if ent.label_ == "PERSON":
                             line = str(ent.text) + "\n"
                             fp.write(line.encode(encoding='utf-8'))
-            timer.update(count)            
+            timer.update(count)
     timer.finish()
 
 
-if __name__ == "__main__":
+def _main():
     pages = get_pages('../../common/text_files/country_demonyms.txt')
     get_people(pages, '../../common/text_files/famous_people.txt.gz')
+
+
+if __name__ == "__main__":
+    _main()

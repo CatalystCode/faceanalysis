@@ -23,9 +23,14 @@ jobs:
     script: make test
     before_script: docker pull "$(grep '^FACE_VECTORIZE_ALGORITHM=' .env | cut -d'=' -f2-)"
 
+  - name: Scripts
+    stage: scripts
+    script: make lint-scripts
+
 stages:
 - lint
 - test
+- scripts
 
 deploy:
   provider: script
