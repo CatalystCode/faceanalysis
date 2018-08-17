@@ -3,8 +3,8 @@ from itsdangerous import SignatureExpired
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from passlib.apps import custom_app_context as password_context
 
-from faceanalysis.models.models import User
-from faceanalysis.models.models import get_db_session
+from faceanalysis.models import User
+from faceanalysis.models import get_db_session
 from faceanalysis.settings import TOKEN_EXPIRATION
 from faceanalysis.settings import TOKEN_SECRET_KEY
 

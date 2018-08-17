@@ -3,3 +3,6 @@ disable=
     fixme,
     invalid-name,
     missing-docstring
+
+[SIMILARITIES]
+ignore-imports=yes

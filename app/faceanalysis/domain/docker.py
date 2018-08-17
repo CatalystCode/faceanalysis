@@ -7,11 +7,11 @@ from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageAlreadyProcessed
 from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.log import get_logger
-from faceanalysis.models.image_status_enum import ImageStatusEnum
-from faceanalysis.models.models import Image
-from faceanalysis.models.models import ImageStatus
-from faceanalysis.models.models import Match
-from faceanalysis.models.models import get_db_session
+from faceanalysis.models import Image
+from faceanalysis.models import ImageStatus
+from faceanalysis.models import ImageStatusEnum
+from faceanalysis.models import Match
+from faceanalysis.models import get_db_session
 from faceanalysis.storage import store_image
 
 logger = get_logger(__name__)

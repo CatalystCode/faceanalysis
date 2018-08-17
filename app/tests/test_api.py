@@ -10,9 +10,9 @@ from unittest import TestCase
 from unittest import skipIf
 
 from faceanalysis.api import app
-from faceanalysis.models.image_status_enum import ImageStatusEnum
-from faceanalysis.models.models import delete_models
-from faceanalysis.models.models import init_models
+from faceanalysis.models import ImageStatusEnum
+from faceanalysis.models import delete_models
+from faceanalysis.models import init_models
 from faceanalysis.settings import ALLOWED_EXTENSIONS
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.tasks import celery

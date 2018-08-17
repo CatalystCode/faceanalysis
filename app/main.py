@@ -2,8 +2,8 @@
 
 from faceanalysis.api import app as application
 from faceanalysis.log import get_logger
-from faceanalysis.models.models import delete_models
-from faceanalysis.models.models import init_models
+from faceanalysis.models import delete_models
+from faceanalysis.models import init_models
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.settings import IMAGE_PROCESSOR_CONCURRENCY
 from faceanalysis.settings import IMAGE_PROCESSOR_QUEUE

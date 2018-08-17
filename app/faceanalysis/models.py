@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from enum import Enum
 from functools import lru_cache
 
 from sqlalchemy import Column
@@ -84,6 +85,13 @@ class FaceApiMapping(Base):  # type: ignore
 # pylint: enable=too-few-public-methods
 
 
+class ImageStatusEnum(Enum):
+    finished_processing = 4
+    processing = 3
+    uploaded = 1
+    face_vector_computed = 5
+
+
 @lru_cache(maxsize=1)
 def _connect():
     engine = create_engine(SQLALCHEMY_CONNECTION_STRING, pool_recycle=3600)
@@ -101,7 +109,7 @@ def delete_models():
     Base.metadata.drop_all(engine)
 
 
-# pylint: disable=board-except
+# pylint: disable=broad-except
 @contextmanager
 def get_db_session(commit=False) -> Session:
     _, session_factory = _connect()
@@ -122,4 +130,4 @@ def get_db_session(commit=False) -> Session:
                 logger.debug('Session committed successfully')
     finally:
         session.close()
-# pylint: enable=board-except
+# pylint: enable=broad-except

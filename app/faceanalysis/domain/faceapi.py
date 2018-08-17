@@ -11,9 +11,9 @@ from faceanalysis import storage
 from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.log import get_logger
-from faceanalysis.models.image_status_enum import ImageStatusEnum
-from faceanalysis.models.models import FaceApiMapping
-from faceanalysis.models.models import get_db_session
+from faceanalysis.models import FaceApiMapping
+from faceanalysis.models import ImageStatusEnum
+from faceanalysis.models import get_db_session
 from faceanalysis.settings import FACE_API_ACCESS_KEY
 from faceanalysis.settings import FACE_API_ENDPOINT
 from faceanalysis.settings import FACE_API_MODEL_ID
