@@ -4,14 +4,34 @@ Given that the [FaceAPI](https://azure.microsoft.com/en-us/services/cognitive-se
 currently does not expose an endpoint to get embeddings for a face, this algorithm
 container has a slightly different interface.
 
+## Model variants
+
+This container implements three methods of face matching which can be selected
+via the `FACE_API_PREDICTION_MODE` environment variable:
+
+1. `Verify` requires no training. The mode simply compares two faces against
+   each other and determines whether they are similar or not. When using this
+   prediction mode, the `FACE_API_GROUP_ID` environment variable can be set to
+   an unused string since the mode does not require a pre-trained model.
+
+2. `Identify` (default) requires training. During training, the mode builds an
+   association between people and their faces. At prediction time, the mode
+   looks up the N most simliar people for a given face.
+
+3. `FindSimilar` requires training. During training, the mode builds a custom
+   list of faces. At prediction time, the mode looks up the N most similar faces
+   to the provided face.
+
 ## Training
 
-To train a new FaceAPI model, run the following:
+To train a new FaceAPI model, run the following (only required for
+`Identify` and `FindSimilar` prediction modes):
 
 ```bash
 docker run \
   -e FACE_API_KEY="<change-me>" \
   -e FACE_API_REGION="<change-me>" \
+  -e FACE_API_PREDICTION_MODE="<change-me>" \
   -v /path/to/training/images:/images \
   face_api_container \
   /images
@@ -44,6 +64,7 @@ docker run \
   -e FACE_API_KEY="<change-me>" \
   -e FACE_API_REGION="<change-me>" \
   -e FACE_API_GROUP_ID="<change-me>" \
+  -e FACE_API_PREDICTION_MODE="<change-me>" \
   -v /path/to/evaluation/images:/images \
   face_api_container \
   /images/1.jpg \
@@ -63,6 +84,7 @@ docker run \
   -e FACE_API_REGION="<change-me>" \
   -e FACE_API_GROUP_ID="<change-me>" \
   -e FACE_API_EVALUATE="true" \
+  -e FACE_API_PREDICTION_MODE="<change-me>" \
   -v /path/to/evaluation/data:/data \
   face_api_container \
   /data/pairs.txt \
