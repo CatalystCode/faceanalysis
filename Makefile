@@ -42,16 +42,16 @@ mypy: build-dev
 lint: pylint flake8 mypy
 
 test: build-dev
-	$(eval data_dir := $(shell mktemp -d))
-	$(eval db_dir := $(shell mktemp -d))
+	$(eval test_data := $(shell mktemp -d))
+	$(eval test_db := $(shell mktemp -d))
 	$(eval queue_name := $(shell echo "faceanalysisq$$RANDOM"))
 	$(eval db_name := $(shell echo "faceanalysisdb$$RANDOM"))
-	DATA_DIR="$(data_dir)" DB_DIR="$(db_dir)" IMAGE_PROCESSOR_QUEUE="$(queue_name)" MYSQL_DATABASE="$(db_name)" \
+	DATA_DIR="$(test_data)" DB_DIR="$(test_db)" IMAGE_PROCESSOR_QUEUE="$(queue_name)" MYSQL_DATABASE="$(db_name)" \
     docker-compose run --rm api nose2 --verbose --with-coverage; \
     exit_code=$$?; \
     docker-compose down; \
-    rm -rf $(data_dir); \
-    rm -rf $(db_dir); \
+    rm -rf $(test_data); \
+    rm -rf $(test_db); \
     exit $$exit_code
 
 createdb: build-prod
