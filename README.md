@@ -9,7 +9,7 @@ This repository contains an API for face detection and matching. The algorithm b
 - [Azure FaceAPI](https://azure.microsoft.com/en-us/services/cognitive-services/face/)
 - [face_recognition](https://github.com/ageitgey/face_recognition)
 - [FaceNet](https://github.com/davidsandberg/facenet)
-- [InsightFace (coming soon)](https://github.com/deepinsight/insightface)
+- [InsightFace](https://github.com/deepinsight/insightface)
 
 More information on customizing and implementing new face detection algorithms can be found [here](./algorithms/README.md).
 
