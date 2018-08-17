@@ -4,6 +4,11 @@ docker_repo := $(shell grep '^DOCKER_REPO=' .env | cut -d'=' -f2-)
 prod_db := $(shell grep '^DB_DIR=' .env | cut -d'=' -f2-)
 prod_data := $(shell grep '^DATA_DIR=' .env | cut -d'=' -f2-)
 
+face_recognition = $(docker_repo)/faceanalysis_facerecognition:$(build_tag)
+faceapi = $(docker_repo)/faceanalysis_faceapi:$(build_tag)
+facenet = $(docker_repo)/faceanalysis_facenet:$(build_tag)
+insightface = $(docker_repo)/faceanalysis_insightface:$(build_tag)
+
 .PHONY: build-dev build-prod build-algorithms release-server release-algorithms pylint flake8 mypy lint test
 
 build-dev:
@@ -15,20 +20,20 @@ build-prod:
     docker-compose build
 
 build-algorithms:
-	docker build -t "$(docker_repo)/faceanalysis_facerecognition:$(build_tag)" algorithms/face_recognition
-	docker build -t "$(docker_repo)/faceanalysis_faceapi:$(build_tag)" algorithms/FaceApi
-	docker build -t "$(docker_repo)/faceanalysis_facenet:$(build_tag)" algorithms/facenet
-	docker build -t "$(docker_repo)/faceanalysis_insightface:$(build_tag)" algorithms/insightface
+	docker build -t "$(face_recognition)" algorithms/face_recognition
+	docker build -t "$(faceapi)" algorithms/FaceApi
+	docker build -t "$(facenet)" algorithms/facenet
+	docker build -t "$(insightface)" algorithms/insightface
 
 release-server: build-prod
 	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" \
     docker-compose push
 
 release-algorithms: build-algorithms
-	docker push "$(docker_repo)/faceanalysis_facerecognition:$(build_tag)"
-	docker push "$(docker_repo)/faceanalysis_faceapi:$(build_tag)"
-	docker push "$(docker_repo)/faceanalysis_facenet:$(build_tag)"
-	docker push "$(docker_repo)/faceanalysis_insightface:$(build_tag)"
+	docker push "$(face_recognition)"
+	docker push "$(faceapi)"
+	docker push "$(facenet)"
+	docker push "$(insightface)"
 
 pylint: build-dev
 	docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/faceanalysis
