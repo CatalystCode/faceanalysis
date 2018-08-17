@@ -5,7 +5,6 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import ForeignKey
@@ -75,10 +74,7 @@ class FaceApiMapping(Base):  # type: ignore
 
 
 def init_models(database_engine):
-    try:
-        Base.metadata.create_all(database_engine)
-    except ProgrammingError:
-        pass
+    Base.metadata.create_all(database_engine)
 
 
 def delete_models(database_engine):

@@ -21,7 +21,8 @@ More information on customizing and implementing new face detection algorithms c
 2. Clone this repo.
 3. Review the default configuration values in `.env`.
 4. To run tests type `make test` from within the top level directory.
-5. To run in production type `make server` from within the top level directory.
+5. To initialize the database, type `make createdb`. This only needs to be executed once.
+6. To start the server, run `make server`.
 
 ## API definition
 

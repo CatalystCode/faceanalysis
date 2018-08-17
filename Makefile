@@ -1,6 +1,8 @@
 SHELL = /bin/bash
 build_tag := $(shell grep '^BUILD_TAG=' .env | cut -d'=' -f2-)
 docker_repo := $(shell grep '^DOCKER_REPO=' .env | cut -d'=' -f2-)
+prod_db := $(shell grep '^DB_DIR=' .env | cut -d'=' -f2-)
+prod_data := $(shell grep '^DATA_DIR=' .env | cut -d'=' -f2-)
 
 .PHONY: build-dev build-prod build-algorithms release-server release-algorithms pylint flake8 mypy lint test
 
@@ -52,5 +54,10 @@ test: build-dev
     rm -rf $(db_dir); \
     exit $$exit_code
 
+createdb: build-prod
+	mkdir -p $(prod_db)
+	docker-compose run --rm api python3 /app/main.py createdb
+
 server: build-prod
+	mkdir -p $(prod_data)
 	docker-compose up

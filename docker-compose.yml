@@ -21,7 +21,7 @@ services:
       context: ./app
       args:
         DEVTOOLS: ${DEVTOOLS}
-    command: ["python3", "worker.py"]
+    command: ["python3", "main.py", "worker"]
     depends_on:
       - mysql
       - rabbitmq

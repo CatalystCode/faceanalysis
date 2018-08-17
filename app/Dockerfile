@@ -22,4 +22,4 @@ COPY . /app
 
 EXPOSE 5000
 ENTRYPOINT ["./wait-for-dependencies.sh"]
-CMD ["gunicorn", "--bind=0.0.0.0:5000", "wsgi"]
+CMD ["gunicorn", "--bind=0.0.0.0:5000", "main"]
