@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+
 from evaluator import Evaluator
 from metrics import DistanceMetric, ThresholdMetric
 
@@ -69,7 +70,7 @@ def _main(args: Namespace) -> None:
     evaluator = Evaluator.create_evaluator(args)
     evaluation_results = evaluator.evaluate()
     print('Evaluation results: ', evaluation_results)
-    parser_metrics = evaluator.get_metrics()
+    parser_metrics = evaluator.compute_metrics()
     print('Parser metrics: ', parser_metrics)
 
 

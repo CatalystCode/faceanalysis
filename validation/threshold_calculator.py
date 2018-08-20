@@ -1,9 +1,9 @@
-from typing import Callable, List, Union, cast
+from typing import Callable, Iterable, Union, cast
+
 import numpy as np
-from sklearn.metrics import (accuracy_score,
-                             f1_score,
-                             precision_score,
+from sklearn.metrics import (accuracy_score, f1_score, precision_score,
                              recall_score)
+
 from calculator import Calculator
 from distance_calculator import DistanceCalculator
 from metrics import DistanceMetric, ThresholdMetric, ThresholdMetricException
@@ -32,7 +32,7 @@ class ThresholdCalculator(Calculator):
         self._threshold_end = threshold_end
         self._threshold_step = threshold_step
 
-    def calculate(self, pairs: List[Pair]) -> float:
+    def calculate(self, pairs: Iterable[Pair]) -> float:
         threshold_scorer = self._get_threshold_scorer()
         dist = DistanceCalculator(self._distance_metric).calculate(pairs)
         labels = [pair.is_match for pair in pairs]

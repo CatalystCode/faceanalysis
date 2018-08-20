@@ -1,7 +1,9 @@
 from argparse import Namespace
 from typing import Dict
+
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_score, recall_score
+
 from container_parser import ContainerParser
 from distance_calculator import DistanceCalculator
 from face_vector_parser import FaceVectorParser
@@ -40,11 +42,11 @@ class Evaluator:
                    threshold_calculator,
                    distance_calculator)
 
-    def get_metrics(self) -> Dict[str, float]:
-        return self._face_vector_parser.get_metrics()
+    def compute_metrics(self) -> Dict[str, float]:
+        return self._face_vector_parser.compute_metrics()
 
     def evaluate(self) -> Dict[str, float]:
-        pairs = self._face_vector_parser.get_pairs()
+        pairs = list(self._face_vector_parser.compute_pairs())
         threshold = self._threshold_calculator.calculate(pairs)
         dist = self._distance_calculator.calculate(pairs)
         predictions = np.less(dist, threshold)

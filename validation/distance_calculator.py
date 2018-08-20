@@ -1,7 +1,9 @@
 import math
-from typing import List, Union, cast
+from typing import Iterable, Union, cast
+
 import numpy as np
 from sklearn.metrics.pairwise import paired_distances
+
 from calculator import Calculator
 from metrics import DistanceMetric, DistanceMetricException
 from pair import Pair
@@ -16,7 +18,7 @@ class DistanceCalculator(Calculator):
         else:
             self._distance_metric = distance_metric
 
-    def calculate(self, pairs: List[Pair]) -> np.ndarray:
+    def calculate(self, pairs: Iterable[Pair]) -> np.ndarray:
         embeddings1 = []
         embeddings2 = []
         for pair in pairs:

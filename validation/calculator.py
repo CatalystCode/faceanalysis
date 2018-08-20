@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Generic, List, TypeVar
+
 from pair import Pair
 
 T = TypeVar('T')
