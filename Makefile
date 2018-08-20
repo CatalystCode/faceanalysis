@@ -4,43 +4,87 @@ docker_repo := $(shell grep '^DOCKER_REPO=' .env | cut -d'=' -f2-)
 prod_db := $(shell grep '^DB_DIR=' .env | cut -d'=' -f2-)
 prod_data := $(shell grep '^DATA_DIR=' .env | cut -d'=' -f2-)
 
-.PHONY: build-dev build-prod build-algorithms release-server release-algorithms pylint flake8 mypy lint test
+face_recognition = $(docker_repo)/faceanalysis_facerecognition:$(build_tag)
+faceapi = $(docker_repo)/faceanalysis_faceapi:$(build_tag)
+facenet = $(docker_repo)/faceanalysis_facenet:$(build_tag)
+insightface = $(docker_repo)/faceanalysis_insightface:$(build_tag)
 
+get_famous_people_list = $(docker_repo)/faceanalysis_getfamouspeoplelist:$(build_tag)
+get_famous_people_photos = $(docker_repo)/faceanalysis_getfamouspeoplephotos:$(build_tag)
+preprocessor = $(docker_repo)/faceanalysis_preprocessor:$(build_tag)
+
+.PHONY: build-dev
 build-dev:
 	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" DEVTOOLS="true" \
     docker-compose build
 
+.PHONY: build-prod
 build-prod:
 	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" \
     docker-compose build
 
-build-algorithms:
-	docker build -t "$(docker_repo)/faceanalysis_facerecognition:$(build_tag)" algorithms/face_recognition
-	docker build -t "$(docker_repo)/faceanalysis_faceapi:$(build_tag)" algorithms/FaceApi
-	docker build -t "$(docker_repo)/faceanalysis_facenet:$(build_tag)" algorithms/facenet
-	docker build -t "$(docker_repo)/faceanalysis_insightface:$(build_tag)" algorithms/insightface
+.PHONY: build-scripts
+build-scripts:
+	docker build -t "$(preprocessor)" ./scripts/preprocessor
+	docker build -t "$(get_famous_people_list)" ./scripts/get_famous_people_list
+	docker build -t "$(get_famous_people_photos)" ./scripts/get_famous_people_photos
 
+.PHONY: build-algorithms
+build-algorithms:
+	docker build -t "$(face_recognition)" algorithms/face_recognition
+	docker build -t "$(faceapi)" algorithms/FaceApi
+	docker build -t "$(facenet)" algorithms/facenet
+	docker build -t "$(insightface)" algorithms/insightface
+
+.PHONY: release-server
 release-server: build-prod
 	DOCKER_REPO="$(docker_repo)" BUILD_TAG="$(build_tag)" \
     docker-compose push
 
+.PHONY: release-algorithms
 release-algorithms: build-algorithms
-	docker push "$(docker_repo)/faceanalysis_facerecognition:$(build_tag)"
-	docker push "$(docker_repo)/faceanalysis_faceapi:$(build_tag)"
-	docker push "$(docker_repo)/faceanalysis_facenet:$(build_tag)"
-	docker push "$(docker_repo)/faceanalysis_insightface:$(build_tag)"
+	docker push "$(face_recognition)"
+	docker push "$(faceapi)"
+	docker push "$(facenet)"
+	docker push "$(insightface)"
 
+.PHONY: pylint-scripts
+pylint-scripts: build-scripts
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(preprocessor)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
+
+.PHONY: flake8-scripts
+flake8-scripts: build-scripts
+	docker run --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install flake8 && flake8 *.py"
+	docker run --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install flake8 && flake8 *.py"
+	docker run --entrypoint=sh "$(preprocessor)" -c "pip -qq install flake8 && flake8 *.py"
+
+.PHONY: mypy-scripts
+mypy-scripts: build-scripts
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(preprocessor)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
+
+.PHONY: lint-scripts
+lint-scripts: pylint-scripts flake8-scripts mypy-scripts
+
+.PHONY: pylint
 pylint: build-dev
 	docker-compose run --rm --no-deps --entrypoint=python3 api -m pylint /app/faceanalysis
 
+.PHONY: flake8
 flake8: build-dev
 	docker-compose run --rm --no-deps --entrypoint=python3 api -m flake8 /app/faceanalysis
 
+.PHONY: mypy
 mypy: build-dev
 	docker-compose run --rm --no-deps --entrypoint=python3 api -m mypy /app/faceanalysis
 
+.PHONY: lint
 lint: pylint flake8 mypy
 
+.PHONY: test
 test: build-dev
 	$(eval test_data := $(shell mktemp -d))
 	$(eval test_db := $(shell mktemp -d))
@@ -54,10 +98,12 @@ test: build-dev
     rm -rf $(test_db); \
     exit $$exit_code
 
+.PHONY: server
 createdb: build-prod
 	mkdir -p $(prod_db)
 	docker-compose run --rm api python3 /app/main.py createdb
 
+.PHONY: server
 server: build-prod
 	mkdir -p $(prod_data)
 	docker-compose up
