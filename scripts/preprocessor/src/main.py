@@ -1,7 +1,7 @@
 from processor import normalize_images
 
 
-def _main(inputdirectory, outputdirectory):
+def _main(inputdirectory: str, outputdirectory: str):
     print('Input directory is {}.'.format(inputdirectory))
     print('Output directory is {}.'.format(outputdirectory))
 
@@ -13,7 +13,7 @@ def _cli():
     from argparse import ArgumentTypeError
     from os.path import isdir
 
-    def directory_type(arg):
+    def directory_type(arg: str) -> str:
         if not isdir(arg):
             raise ArgumentTypeError('{} is not a directory'.format(arg))
         return arg

@@ -2,11 +2,12 @@ from pathlib import Path
 
 from skimage import exposure
 from skimage import io
+import numpy as np
 
 allowed_file_extensions = ['.png', '.jpg', '.jpeg']
 
 
-def normalize_images(inputdirectory, outputdirectory):
+def normalize_images(inputdirectory: str, outputdirectory: str):
     inputpath = Path(inputdirectory)
     outputpath = Path(outputdirectory)
 
@@ -26,17 +27,19 @@ def normalize_images(inputdirectory, outputdirectory):
         save_image(str(output_file_name), img_output)
 
 
-def normalize_image(file_path):
+def normalize_image(file_path: str) -> np.ndarray:
     img = io.imread(file_path)
     img_output = exposure.equalize_adapthist(img)
     return img_output
 
 
-def save_image(file_path, img):
+def save_image(file_path: str, img: np.ndarray):
     io.imsave(file_path, img)
 
 
-def get_output_file_name(infile, inputpath, outputpath):
+def get_output_file_name(infile: Path, inputpath: Path, outputpath: Path) \
+        -> Path:
+
     parent_dir = infile.parent
 
     if not inputpath.samefile(Path(parent_dir)):
@@ -48,7 +51,7 @@ def get_output_file_name(infile, inputpath, outputpath):
     return output_file_name
 
 
-def ensure_dir_exists_for_file(file_name):
+def ensure_dir_exists_for_file(file_name: Path):
     output_parent_dir = file_name.parent
 
     if not Path.exists(output_parent_dir):
