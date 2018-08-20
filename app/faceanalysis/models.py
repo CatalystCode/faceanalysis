@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from enum import Enum
+from enum import auto
 from functools import lru_cache
 
 from sqlalchemy import Column
@@ -86,10 +87,10 @@ class FaceApiMapping(Base):  # type: ignore
 
 
 class ImageStatusEnum(Enum):
-    finished_processing = 4
-    processing = 3
-    uploaded = 1
-    face_vector_computed = 5
+    finished_processing = auto()
+    processing = auto()
+    uploaded = auto()
+    face_vector_computed = auto()
 
 
 @lru_cache(maxsize=1)
