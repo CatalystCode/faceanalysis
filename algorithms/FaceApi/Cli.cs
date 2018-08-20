@@ -15,20 +15,18 @@ namespace FaceApi
         static async Task MainAsync(string[] args)
         {
             var settings = new Settings(args);
-            if (!settings.TryParse(out string apiKey, out string apiEndpoint, out double matchThreshold, out PredictionMode predictionMode))
+            if (!settings.TryParse(out IFaceIdentifier faceIdentifier, out double matchThreshold))
             {
                 await Console.Error.WriteLineAsync("Missing api-key and api-endpoint settings");
                 return;
             }
-
-            var faceIdentifier = new FaceIdentifier(apiKey, apiEndpoint, predictionMode);
 
             if (settings.TryParseForTraining(out string trainSetRoot))
             {
                 var trainedGroupId = await faceIdentifier.Train(trainSetRoot);
                 await Console.Out.WriteLineAsync(trainedGroupId ?? "Training failed");
             }
-            else if (settings.TryParseForEvaluation(out string evaluationGroupId, out string pairsTxtPath, out string imagesRoot))
+            else if (settings.TryParseForEvaluation(out string evaluationGroupId, out string pairsTxtPath, out string imagesRoot, out bool ignoreMissingEmbeddings))
             {
                 var pairs = new Pairs(pairsTxtPath, imagesRoot).Parse();
                 var stats = new PairStats();
@@ -37,7 +35,14 @@ namespace FaceApi
                     try
                     {
                         var areSame = await faceIdentifier.Predict(evaluationGroupId, matchThreshold, pair.ImagePath1, pair.ImagePath2);
-                        stats.Record(areSame, pair.AreSame);
+                        if (areSame.HasValue)
+                        {
+                            stats.Record(areSame.Value, pair.AreSame);
+                        }
+                        else if (!ignoreMissingEmbeddings)
+                        {
+                            stats.Record(!pair.AreSame, pair.AreSame);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -52,7 +57,7 @@ namespace FaceApi
             else if (settings.TryParseForPrediction(out string predictionGroupId, out string imagePath1, out string imagePath2))
             {
                 var areSame = await faceIdentifier.Predict(predictionGroupId, matchThreshold, imagePath1, imagePath2);
-                await Console.Out.WriteLineAsync(areSame.ToString());
+                await Console.Out.WriteLineAsync(areSame.HasValue ? areSame.ToString() : "Failed to find faces");
             }
             else
             {
@@ -73,21 +78,17 @@ namespace FaceApi
             Args = args;
         }
 
-        public bool TryParse(out string apiKey, out string apiEndpoint, out double matchThreshold, out PredictionMode predictionMode)
+        public bool TryParse(out IFaceIdentifier faceIdentifier, out double matchThreshold)
         {
-            if (ApiKey == null || ApiEndpoint == null)
+            if (ApiKey == null || ApiEndpoint == null || FaceIdentifier == null)
             {
-                apiKey = null;
-                apiEndpoint = null;
+                faceIdentifier = null;
                 matchThreshold = DefaultMatchThreshold;
-                predictionMode = DefaultPredictionMode;
                 return false;
             }
 
-            apiKey = ApiKey;
-            apiEndpoint = ApiEndpoint;
+            faceIdentifier = FaceIdentifier;
             matchThreshold = MatchThreshold;
-            predictionMode = PredictionMode;
             return true;
         }
 
@@ -103,19 +104,21 @@ namespace FaceApi
             return true;
         }
 
-        public bool TryParseForEvaluation(out string groupId, out string pairsTxtPath, out string trainSetRoot)
+        public bool TryParseForEvaluation(out string groupId, out string pairsTxtPath, out string trainSetRoot, out bool ignoreMissingEmbeddings)
         {
             if (!Evaluation || GroupId == null || Args.Length != 2 || !File.Exists(Args[0]) || !Directory.Exists(Args[1]))
             {
                 groupId = null;
                 pairsTxtPath = null;
                 trainSetRoot = null;
+                ignoreMissingEmbeddings = IgnoreMissingEmbeddings;
                 return false;
             }
 
             groupId = GroupId;
             pairsTxtPath = Args[0];
             trainSetRoot = Args[1];
+            ignoreMissingEmbeddings = IgnoreMissingEmbeddings;
             return true;
         }
 
@@ -135,9 +138,32 @@ namespace FaceApi
             return true;
         }
 
+        private IFaceIdentifier FaceIdentifier
+        {
+            get
+            {
+                switch (PredictionMode)
+                {
+                    case PredictionMode.FindSimilar:
+                        return new FindSimilarFaceIdentifier(ApiKey, ApiEndpoint);
+                    case PredictionMode.Identify:
+                        return new IdentifyFaceIdentifier(ApiKey, ApiEndpoint);
+                    case PredictionMode.Verify:
+                        return new VerifyFaceIdentifier(ApiKey, ApiEndpoint);
+                    default:
+                        return null;
+                }
+            }
+        }
+
         private bool Evaluation
         {
             get => Environment.GetEnvironmentVariable("FACE_API_EVALUATE") == "true";
+        }
+
+        private bool IgnoreMissingEmbeddings
+        {
+            get => Environment.GetEnvironmentVariable("FACE_API_IGNORE_MISSING_EMBEDDINGS") == "true";
         }
 
         private string ApiKey
@@ -199,5 +225,12 @@ namespace FaceApi
         {
             get => Environment.GetEnvironmentVariable("FACE_API_GROUP_ID");
         }
+    }
+
+    enum PredictionMode
+    {
+        FindSimilar,
+        Identify,
+        Verify
     }
 }

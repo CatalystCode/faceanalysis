@@ -4,25 +4,24 @@ from typing import Optional
 from typing import Tuple
 
 import numpy as np
+from sqlalchemy.orm import Session
 
 from faceanalysis.face_vectorizer import face_vector_from_text, FaceVector
 from faceanalysis.face_vectorizer import face_vector_to_text
 from faceanalysis.face_vectorizer import get_face_vectors
 from faceanalysis.log import get_logger
-from faceanalysis.models.database_manager import Session
-from faceanalysis.models.database_manager import get_database_manager
-from faceanalysis.models.image_status_enum import ImageStatusEnum
-from faceanalysis.models.models import FeatureMapping
-from faceanalysis.models.models import Image
-from faceanalysis.models.models import ImageStatus
-from faceanalysis.models.models import Match
+from faceanalysis.models import FeatureMapping
+from faceanalysis.models import Image
+from faceanalysis.models import ImageStatus
+from faceanalysis.models import ImageStatusEnum
+from faceanalysis.models import Match
+from faceanalysis.models import get_db_session
 from faceanalysis.settings import DISTANCE_SCORE_THRESHOLD
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.storage import StorageError
 from faceanalysis.storage import delete_image
 from faceanalysis.storage import get_image_path
 
-db = get_database_manager()
 logger = get_logger(__name__)
 
 
@@ -59,11 +58,12 @@ def _store_matches(this_img_id: str,
 
 def _load_image_ids_and_face_vectors() -> Tuple[List[str], np.array]:
     logger.debug('getting all img ids and respective features')
-    session = db.get_session()
+
+    with get_db_session() as session:
+        rows = session.query(FeatureMapping)\
+            .all()
+
     known_features = []
-    rows = session.query(FeatureMapping)\
-        .all()
-    session.close()
     img_ids = []
     for row in rows:
         img_ids.append(row.img_id)
@@ -93,16 +93,16 @@ def _prepare_matches(matches: List[dict],
 def _update_img_status(img_id: str,
                        status: Optional[ImageStatusEnum] = None,
                        error_msg: Optional[str] = None):
-
-    session = db.get_session()
     update_fields = {}
     if status:
         update_fields['status'] = status.name
     if error_msg:
         update_fields['error_msg'] = error_msg
-    session.query(ImageStatus).filter(
-        ImageStatus.img_id == img_id).update(update_fields)
-    db.safe_commit(session)
+
+    with get_db_session(commit=True) as session:
+        session.query(ImageStatus)\
+            .filter(ImageStatus.img_id == img_id)\
+            .update(update_fields)
 
 
 # pylint: disable=len-as-condition
@@ -134,27 +134,26 @@ def process_image(img_id: str):
     logger.info('Found %d faces in image %s', len(face_vectors), img_id)
     _update_img_status(img_id, status=ImageStatusEnum.face_vector_computed)
 
-    session = db.get_session()
-    _add_entry_to_session(Image, session, img_id=img_id)
-    matches = []  # type: List[dict]
-    for face_vector in face_vectors:
-        _store_face_vector(face_vector, img_id, session)
+    with get_db_session(commit=True) as session:
+        _add_entry_to_session(Image, session, img_id=img_id)
+        matches = []  # type: List[dict]
+        for face_vector in face_vectors:
+            _store_face_vector(face_vector, img_id, session)
 
-        distances = _compute_distances(prev_face_vectors, face_vector)
-        for that_img_id, distance in zip(prev_img_ids, distances):
-            if img_id == that_img_id:
-                continue
-            distance = float(distance)
-            if distance >= DISTANCE_SCORE_THRESHOLD:
-                continue
-            _prepare_matches(matches, that_img_id, distance)
+            distances = _compute_distances(prev_face_vectors, face_vector)
+            for that_img_id, distance in zip(prev_img_ids, distances):
+                if img_id == that_img_id:
+                    continue
+                distance = float(distance)
+                if distance >= DISTANCE_SCORE_THRESHOLD:
+                    continue
+                _prepare_matches(matches, that_img_id, distance)
 
-    logger.info('Found %d face matches for image %s', len(matches), img_id)
-    for match in matches:
-        _store_matches(img_id, match["that_img_id"],
-                       match["distance_score"], session)
+        logger.info('Found %d face matches for image %s', len(matches), img_id)
+        for match in matches:
+            _store_matches(img_id, match["that_img_id"],
+                           match["distance_score"], session)
 
-    db.safe_commit(session)
     _update_img_status(img_id,
                        status=ImageStatusEnum.finished_processing,
                        error_msg=('No faces found in image'

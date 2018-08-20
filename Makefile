@@ -1,6 +1,8 @@
 SHELL = /bin/bash
 build_tag := $(shell grep '^BUILD_TAG=' .env | cut -d'=' -f2-)
 docker_repo := $(shell grep '^DOCKER_REPO=' .env | cut -d'=' -f2-)
+prod_db := $(shell grep '^DB_DIR=' .env | cut -d'=' -f2-)
+prod_data := $(shell grep '^DATA_DIR=' .env | cut -d'=' -f2-)
 
 .PHONY: build-dev build-prod build-algorithms release-server release-algorithms pylint flake8 mypy lint test
 
@@ -40,17 +42,22 @@ mypy: build-dev
 lint: pylint flake8 mypy
 
 test: build-dev
-	$(eval data_dir := $(shell mktemp -d))
-	$(eval db_dir := $(shell mktemp -d))
+	$(eval test_data := $(shell mktemp -d))
+	$(eval test_db := $(shell mktemp -d))
 	$(eval queue_name := $(shell echo "faceanalysisq$$RANDOM"))
 	$(eval db_name := $(shell echo "faceanalysisdb$$RANDOM"))
-	DATA_DIR="$(data_dir)" DB_DIR="$(db_dir)" IMAGE_PROCESSOR_QUEUE="$(queue_name)" MYSQL_DATABASE="$(db_name)" \
+	DATA_DIR="$(test_data)" DB_DIR="$(test_db)" IMAGE_PROCESSOR_QUEUE="$(queue_name)" MYSQL_DATABASE="$(db_name)" \
     docker-compose run --rm api nose2 --verbose --with-coverage; \
     exit_code=$$?; \
     docker-compose down; \
-    rm -rf $(data_dir); \
-    rm -rf $(db_dir); \
+    rm -rf $(test_data); \
+    rm -rf $(test_db); \
     exit $$exit_code
 
+createdb: build-prod
+	mkdir -p $(prod_db)
+	docker-compose run --rm api python3 /app/main.py createdb
+
 server: build-prod
+	mkdir -p $(prod_data)
 	docker-compose up

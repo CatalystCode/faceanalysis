@@ -21,7 +21,7 @@ jobs:
   - name: Tests
     stage: test
     script: make test
-    before_script: docker pull cwolff/faceanalysis_facerecognition
+    before_script: docker pull "$(grep '^FACE_VECTORIZE_ALGORITHM=' .env | cut -d'=' -f2-)"
 
 stages:
 - lint

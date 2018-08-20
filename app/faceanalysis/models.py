@@ -1,3 +1,8 @@
+from contextlib import contextmanager
+from enum import Enum
+from enum import auto
+from functools import lru_cache
+
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Float
@@ -5,11 +10,19 @@ from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import UniqueConstraint
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.sql import func
 
+from faceanalysis.log import get_logger
+from faceanalysis.settings import SQLALCHEMY_CONNECTION_STRING
+
+logger = get_logger(__name__)
 Base = declarative_base()
 
 
@@ -62,12 +75,60 @@ class Match(Base):  # type: ignore
     that_img = relationship('Image', foreign_keys=[that_img_id])
     __table_args__ = (UniqueConstraint(
         'this_img_id', 'that_img_id', name='_this_that_uc'),)
+
+
+class FaceApiMapping(Base):  # type: ignore
+    __tablename__ = 'faceapimappings'
+
+    id = Column(Integer, primary_key=True)
+    img_id = Column(String(50), index=True, unique=True)
+    face_id = Column(String(50), index=True, unique=True)
 # pylint: enable=too-few-public-methods
 
 
-def init_models(database_engine):
-    Base.metadata.create_all(database_engine)
+class ImageStatusEnum(Enum):
+    finished_processing = auto()
+    processing = auto()
+    uploaded = auto()
+    face_vector_computed = auto()
 
 
-def delete_models(database_engine):
-    Base.metadata.drop_all(database_engine)
+@lru_cache(maxsize=1)
+def _connect():
+    engine = create_engine(SQLALCHEMY_CONNECTION_STRING, pool_recycle=3600)
+    session_factory = sessionmaker(bind=engine)
+    return engine, session_factory
+
+
+def init_models():
+    engine, _ = _connect()
+    Base.metadata.create_all(engine)
+
+
+def delete_models():
+    engine, _ = _connect()
+    Base.metadata.drop_all(engine)
+
+
+# pylint: disable=broad-except
+@contextmanager
+def get_db_session(commit=False) -> Session:
+    _, session_factory = _connect()
+    session = session_factory()
+    try:
+        yield session
+    except Exception:
+        logger.exception('Error during session, rolling back')
+        session.rollback()
+    else:
+        if commit:
+            try:
+                session.commit()
+            except SQLAlchemyError:
+                logger.exception('Error during session commit, rolling back')
+                session.rollback()
+            else:
+                logger.debug('Session committed successfully')
+    finally:
+        session.close()
+# pylint: enable=broad-except

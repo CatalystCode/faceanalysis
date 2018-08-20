@@ -7,13 +7,14 @@ from os.path import dirname
 from os.path import join
 from time import sleep
 from unittest import TestCase
+from unittest import skipIf
 
 from faceanalysis.api import app
-from faceanalysis.models.database_manager import get_database_manager
-from faceanalysis.models.image_status_enum import ImageStatusEnum
-from faceanalysis.models.models import delete_models
-from faceanalysis.models.models import init_models
+from faceanalysis.models import ImageStatusEnum
+from faceanalysis.models import delete_models
+from faceanalysis.models import init_models
 from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.tasks import celery
 
 TEST_IMAGES_ROOT = join(abspath(dirname(__file__)), 'images')
@@ -24,8 +25,7 @@ class ApiTestCase(TestCase):
     def setUp(self):
         app.testing = True
         self.app = app.test_client()
-        self.db = get_database_manager()
-        init_models(self.db.engine)
+        init_models()
         username = 'username'
         password = 'password'
         self._register_default_user(username, password)
@@ -33,7 +33,7 @@ class ApiTestCase(TestCase):
         self.headers = _get_basic_auth_headers(token, 'any value')
 
     def tearDown(self):
-        delete_models(self.db.engine)
+        delete_models()
 
     @classmethod
     def tearDownClass(cls):
@@ -125,10 +125,14 @@ class ApiTestCase(TestCase):
         fnames = {'1.jpg', '2.jpg'}
         self._test_end_to_end_with_matching_imgs(fnames)
 
+    @skipIf(FACE_VECTORIZE_ALGORITHM == 'FaceApi',
+            reason='FaceApi does not implement multiple matches')
     def test_end_to_end_with_multiple_faces_per_img_that_match(self):
         fnames = {'7.jpg', '8.jpg'}
         self._test_end_to_end_with_matching_imgs(fnames)
 
+    @skipIf(FACE_VECTORIZE_ALGORITHM == 'FaceApi',
+            reason='FaceApi does not implement multiple matches')
     def test_end_to_end_with_one_to_multiple_faces_per_img_that_match(self):
         fnames = {'3.jpg', '6.jpg'}
         self._test_end_to_end_with_matching_imgs(fnames)
@@ -152,6 +156,8 @@ class ApiTestCase(TestCase):
         self._upload_img(fname)
         self._upload_img(fname, expected_status_code=HTTPStatus.BAD_REQUEST)
 
+    @skipIf(FACE_VECTORIZE_ALGORITHM == 'FaceApi',
+            reason='FaceApi can process multiple times')
     def test_upload_and_process_twice(self):
         fname = '5.jpg'
 

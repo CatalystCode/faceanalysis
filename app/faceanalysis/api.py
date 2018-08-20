@@ -13,6 +13,9 @@ from werkzeug.utils import secure_filename
 
 from faceanalysis import auth
 from faceanalysis import domain
+from faceanalysis.domain.errors import DuplicateImage
+from faceanalysis.domain.errors import ImageAlreadyProcessed
+from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.settings import ALLOWED_EXTENSIONS
 
 JsonResponse = Union[dict, Tuple[dict, int]]
@@ -75,10 +78,10 @@ class ProcessImg(Resource):
 
         try:
             domain.process_image(img_id)
-        except domain.ImageAlreadyProcessed:
+        except ImageAlreadyProcessed:
             return {'error_msg': ERROR_IMAGE_ALREADY_PROCESSED},\
                     HTTPStatus.BAD_REQUEST.value
-        except domain.ImageDoesNotExist:
+        except ImageDoesNotExist:
             return {'error_msg': ERROR_IMAGE_DOES_NOT_EXIST},\
                    HTTPStatus.BAD_REQUEST.value
 
@@ -87,7 +90,7 @@ class ProcessImg(Resource):
     def get(self, img_id: str) -> JsonResponse:
         try:
             status, error = domain.get_processing_status(img_id)
-        except domain.ImageDoesNotExist:
+        except ImageDoesNotExist:
             return {'error_msg': ERROR_IMAGE_DOES_NOT_EXIST},\
                    HTTPStatus.BAD_REQUEST.value
 
@@ -114,7 +117,7 @@ class ImgUpload(Resource):
 
         try:
             img_id = domain.upload_image(image.stream, filename)
-        except domain.DuplicateImage:
+        except DuplicateImage:
             return {'error_msg': ERROR_DUPLICATE_IMAGE},\
                     HTTPStatus.BAD_REQUEST.value
 
