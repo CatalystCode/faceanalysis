@@ -1,11 +1,14 @@
 import math
-from typing import Iterable, Union, cast
+from typing import Iterable
+from typing import Union
+from typing import cast
 
 import numpy as np
 from sklearn.metrics.pairwise import paired_distances
 
 from calculator import Calculator
-from metrics import DistanceMetric, DistanceMetricException
+from metrics import DistanceMetric
+from metrics import DistanceMetricException
 from pair import Pair
 
 

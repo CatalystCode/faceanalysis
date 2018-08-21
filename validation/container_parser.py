@@ -1,9 +1,12 @@
 import json
-from os.path import basename, dirname, join
-from typing import Dict, Iterator, List
+from os.path import basename
+from os.path import dirname
+from os.path import join
+from typing import Dict
+from typing import Iterator
+from typing import List
 
 import docker
-
 from pair import Pair
 from pair_parser import PairParser
 from parser_base import ParserBase
@@ -14,10 +17,10 @@ class ContainerParser(ParserBase):
     def __init__(self,
                  pair_parser: PairParser,
                  container_name: str,
-                 prealigned_flag: bool) -> None:
+                 is_prealigned: bool) -> None:
         self._pair_parser = pair_parser
         self._container_name = container_name
-        self._prealigned_flag = prealigned_flag
+        self._is_prealigned = is_prealigned
         self.__face_vectors = None
 
     @property
@@ -37,13 +40,13 @@ class ContainerParser(ParserBase):
 
     def _compute_face_vectors(self) -> List[List[List[float]]]:
         pairs = list(self._pair_parser.compute_pairs())
-        base_dir = dirname(dirname((pairs[0].image1)))
+        base_dir = self._get_base_dir_for_volume_mapping(pairs[0].image1)
         volumes = {base_dir: {'bind': '/images', 'mode': 'ro'}}
         mounts = [join(basename(dirname(image_path)), basename(image_path))
                   for pair in pairs
                   for image_path in [pair.image1, pair.image2]]
         image_mount = ' '.join([f'/images/{path}' for path in mounts])
-        env = ["PREALIGNED=true"] if self._prealigned_flag else []
+        env = ["PREALIGNED=true"] if self._is_prealigned else []
         client = docker.from_env()
         stdout = client.containers.run(self._container_name,
                                        image_mount,
@@ -51,3 +54,6 @@ class ContainerParser(ParserBase):
                                        auto_remove=True,
                                        environment=env)
         return json.loads(stdout.decode('utf-8').strip())['faceVectors']
+
+    def _get_base_dir_for_volume_mapping(self, full_image_path: str) -> str:
+        return dirname(dirname(full_image_path))

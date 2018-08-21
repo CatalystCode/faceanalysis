@@ -1,12 +1,19 @@
-from typing import Callable, Iterable, Union, cast
+from typing import Callable
+from typing import Iterable
+from typing import Union
+from typing import cast
 
 import numpy as np
-from sklearn.metrics import (accuracy_score, f1_score, precision_score,
-                             recall_score)
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 
 from calculator import Calculator
 from distance_calculator import DistanceCalculator
-from metrics import DistanceMetric, ThresholdMetric, ThresholdMetricException
+from metrics import DistanceMetric
+from metrics import ThresholdMetric
+from metrics import ThresholdMetricException
 from pair import Pair
 
 

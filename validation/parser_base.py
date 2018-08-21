@@ -1,5 +1,7 @@
-from abc import ABC, abstractmethod
-from typing import Dict, Iterator
+from abc import ABC
+from abc import abstractmethod
+from typing import Any
+from typing import Iterator
 
 from pair import Pair
 
@@ -11,5 +13,5 @@ class ParserBase(ABC):
         pass
 
     @abstractmethod
-    def compute_metrics(self) -> Dict[str, float]:
+    def compute_metrics(self) -> Any:
         pass

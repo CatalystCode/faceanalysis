@@ -1,4 +1,21 @@
-from enum import Enum, auto
+from enum import Enum
+from enum import auto
+
+from dataclasses import dataclass
+
+
+@dataclass
+class EvaluationMetric:
+    accuracy: float
+    recall: float
+    precision: float
+
+
+@dataclass
+class FaceVectorMetric:
+    num_expected: int
+    num_missing: int
+    percentage_missing: float
 
 
 class DistanceMetric(Enum):

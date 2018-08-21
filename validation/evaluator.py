@@ -1,12 +1,17 @@
 from argparse import Namespace
-from typing import Dict
 
 import numpy as np
-from sklearn.metrics import accuracy_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 
 from container_parser import ContainerParser
 from distance_calculator import DistanceCalculator
+from face_vector_fill_parser import FaceVectorFillParser
 from face_vector_parser import FaceVectorParser
+from face_vector_remove_parser import FaceVectorRemoveParser
+from metrics import EvaluationMetric
+from metrics import FaceVectorMetric
 from pair_parser import PairParser
 from threshold_calculator import ThresholdCalculator
 
@@ -27,11 +32,14 @@ class Evaluator:
         container_parser = ContainerParser(pair_parser,
                                            args.container_name,
                                            args.prealigned_flag)
-        face_vector_parser = FaceVectorParser(
-            container_parser,
-            args.embedding_size,
-            args.distance_metric,
-            args.remove_empty_embeddings_flag)
+        face_vector_parser: FaceVectorParser
+        if args.remove_empty_embeddings_flag:
+            face_vector_parser = FaceVectorRemoveParser(container_parser,
+                                                        args.distance_metric)
+        else:
+            face_vector_parser = FaceVectorFillParser(container_parser,
+                                                      args.embedding_size,
+                                                      args.distance_metric)
         threshold_calculator = ThresholdCalculator(args.distance_metric,
                                                    args.threshold_metric,
                                                    args.threshold_start,
@@ -42,18 +50,15 @@ class Evaluator:
                    threshold_calculator,
                    distance_calculator)
 
-    def compute_metrics(self) -> Dict[str, float]:
+    def compute_metrics(self) -> FaceVectorMetric:
         return self._face_vector_parser.compute_metrics()
 
-    def evaluate(self) -> Dict[str, float]:
+    def evaluate(self) -> EvaluationMetric:
         pairs = list(self._face_vector_parser.compute_pairs())
         threshold = self._threshold_calculator.calculate(pairs)
         dist = self._distance_calculator.calculate(pairs)
         predictions = np.less(dist, threshold)
         labels = [pair.is_match for pair in pairs]
-        evaluation_results = {
-            'accuracy': accuracy_score(labels, predictions),
-            'recall': recall_score(labels, predictions),
-            'precision': precision_score(labels, predictions)
-        }
-        return evaluation_results
+        return EvaluationMetric(accuracy_score(labels, predictions),
+                                recall_score(labels, predictions),
+                                precision_score(labels, predictions))

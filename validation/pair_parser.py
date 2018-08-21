@@ -1,5 +1,7 @@
-from os.path import isfile, join
-from typing import Dict, Iterator
+from os.path import isfile
+from os.path import join
+from typing import Dict
+from typing import Iterator
 
 from pair import Pair
 from parser_base import ParserBase
@@ -13,7 +15,7 @@ class PairParser(ParserBase):
 
     def compute_pairs(self) -> Iterator[Pair]:
         with open(self.pairs_fname, 'r', encoding='utf-8') as f:
-            next(f)
+            next(f)  # skip first line, which contains metadata
             for line in f:
                 yield self._compute_pair(line)
 
