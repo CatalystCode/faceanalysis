@@ -128,7 +128,12 @@ namespace FaceApi
 
         public double Accuracy
         {
-            get => (truePositives + trueNegatives) / (double)(truePositives + trueNegatives + falsePositives + falseNegatives);
+            get => (truePositives + trueNegatives) / (double)Total;
+        }
+
+        private int Total
+        {
+            get => truePositives + falsePositives + trueNegatives + falseNegatives;
         }
     }
 }
