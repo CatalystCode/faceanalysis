@@ -95,6 +95,7 @@ namespace FaceApi
         private int trueNegatives = 0;
         private int falsePositives = 0;
         private int falseNegatives = 0;
+        private int missing = 0;
 
         public void Record(bool areSamePredicted, bool areSameActual)
         {
@@ -114,6 +115,16 @@ namespace FaceApi
             {
                 Interlocked.Increment(ref falseNegatives);
             }
+        }
+
+        public void RecordMissing()
+        {
+            Interlocked.Increment(ref missing);
+        }
+
+        public double Missing
+        {
+            get => missing / (double)Total;
         }
 
         public double Precision
