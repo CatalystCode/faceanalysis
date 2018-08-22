@@ -43,6 +43,11 @@ namespace FaceApi
                         {
                             stats.Record(!pair.AreSame, pair.AreSame);
                         }
+
+                        if (!areSame.HasValue)
+                        {
+                            stats.RecordMissing();
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -53,6 +58,7 @@ namespace FaceApi
                 await Console.Out.WriteLineAsync($"Accuracy: {stats.Accuracy}");
                 await Console.Out.WriteLineAsync($"Precision: {stats.Precision}");
                 await Console.Out.WriteLineAsync($"Recall: {stats.Recall}");
+                await Console.Out.WriteLineAsync($"Missing: {stats.Missing}");
             }
             else if (settings.TryParseForPrediction(out string predictionGroupId, out string imagePath1, out string imagePath2))
             {
