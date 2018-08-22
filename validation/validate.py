@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from argparse import FileType
 from argparse import Namespace
 
 from evaluator.evaluator import Evaluator
@@ -13,7 +14,7 @@ def _parse_arguments() -> Namespace:
                         required=True,
                         help='Path to the image directory.')
     parser.add_argument('--pairs_fname',
-                        type=str,
+                        type=FileType('r', encoding='utf-8'),
                         required=True,
                         help='Filename of pairs.txt')
     parser.add_argument('--container_name',
@@ -78,6 +79,8 @@ def _main(args: Namespace) -> None:
 
 def _cli() -> None:
     args = _parse_arguments()
+    args.pairs_fname.close()
+    args.pairs_fname = args.pairs_fname.name
     _main(args)
 
 
