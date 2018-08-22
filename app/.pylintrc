@@ -2,7 +2,8 @@
 disable=
     fixme,
     invalid-name,
-    missing-docstring
+    missing-docstring,
+    too-few-public-methods
 
 [SIMILARITIES]
 ignore-imports=yes

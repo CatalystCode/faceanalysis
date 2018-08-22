@@ -55,5 +55,6 @@ class ContainerParser(ParserBase):
                                        environment=env)
         return json.loads(stdout.decode('utf-8').strip())['faceVectors']
 
-    def _get_base_dir_for_volume_mapping(self, full_image_path: str) -> str:
+    @staticmethod
+    def _get_base_dir_for_volume_mapping(full_image_path: str) -> str:
         return dirname(dirname(full_image_path))

@@ -1,7 +1,6 @@
+from dataclasses import dataclass
 from enum import Enum
 from enum import auto
-
-from dataclasses import dataclass
 
 
 @dataclass

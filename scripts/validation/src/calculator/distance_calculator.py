@@ -15,7 +15,7 @@ from metrics.metrics import DistanceMetricException
 class DistanceCalculator(Calculator):
 
     def __init__(self, distance_metric: Union[str, DistanceMetric]) -> None:
-        if type(distance_metric) == str:
+        if isinstance(distance_metric, str):
             self._distance_metric = getattr(DistanceMetric,
                                             cast(str, distance_metric))
         else:
@@ -33,18 +33,17 @@ class DistanceCalculator(Calculator):
                     embeddings1,
                     embeddings2,
                     metric='euclidean'))
-        elif self._distance_metric == DistanceMetric.ANGULAR_DISTANCE:
+        if self._distance_metric == DistanceMetric.ANGULAR_DISTANCE:
             # Angular Distance: https://en.wikipedia.org/wiki/Cosine_similarity
             similarity = 1 - paired_distances(
                 embeddings1,
                 embeddings2,
                 metric='cosine')
             return np.arccos(similarity) / math.pi
-        else:
-            metrics = [f'{DistanceMetric.__qualname__}.{attr}'
-                       for attr in dir(DistanceMetric)
-                       if not callable(getattr(DistanceMetric, attr))
-                       and not attr.startswith("__")]
-            err = f"Undefined {DistanceMetric.__qualname__}. \
+        metrics = [f'{DistanceMetric.__qualname__}.{attr}'
+                   for attr in dir(DistanceMetric)
+                   if not callable(getattr(DistanceMetric, attr))
+                   and not attr.startswith("__")]
+        err = f"Undefined {DistanceMetric.__qualname__}. \
 Choose from {metrics}"
-            raise DistanceMetricException(err)
+        raise DistanceMetricException(err)

@@ -1,11 +1,10 @@
+from dataclasses import dataclass
 from typing import Generic
 from typing import TypeVar
 
-from dataclasses import dataclass
-
 T = TypeVar('T')
 
-
+# pylint: disable=unsubscriptable-object
 @dataclass
 class Pair(Generic[T]):
     image1: T
