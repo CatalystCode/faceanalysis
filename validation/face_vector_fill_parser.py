@@ -1,6 +1,8 @@
+from functools import partial
+
 from container_parser import ContainerParser
-from face_vector_fill_parser_pipeline import FaceVectorFillParserPipeline
 from face_vector_parser import FaceVectorParser
+from parser_pipeline_funcs import fill_empty
 
 
 class FaceVectorFillParser(FaceVectorParser):
@@ -12,16 +14,7 @@ class FaceVectorFillParser(FaceVectorParser):
         self._embedding_size = embedding_size
         self.__parser_pipeline = None
 
-    @property
-    def _parser_pipeline(self):
-        if not self.__parser_pipeline:
-            pairs = self._container_parser.compute_pairs()
-            self.__parser_pipeline = FaceVectorFillParserPipeline(
-                pairs,
-                self.distance_metric,
-                self.embedding_size)
-        return self.__parser_pipeline
-
     def _build_pipeline(self) -> None:
         super()._build_pipeline()
-        self._parser_pipeline.add(self._parser_pipeline.fill_empty)
+        partial_fill = partial(fill_empty, embedding_size=self._embedding_size)
+        self._parser_pipeline.add(partial_fill)
