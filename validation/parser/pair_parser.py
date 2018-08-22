@@ -1,10 +1,9 @@
 from os.path import isfile
 from os.path import join
+from parser.pair import Pair
+from parser.parser_base import ParserBase
 from typing import Dict
-from typing import Iterator
-
-from pair import Pair
-from parser_base import ParserBase
+from typing import Iterable
 
 
 class PairParser(ParserBase):
@@ -13,7 +12,7 @@ class PairParser(ParserBase):
         self.pairs_fname = pairs_fname
         self._image_dir = image_dir
 
-    def compute_pairs(self) -> Iterator[Pair]:
+    def compute_pairs(self) -> Iterable[Pair]:
         with open(self.pairs_fname, 'r', encoding='utf-8') as f:
             next(f)  # skip first line, which contains metadata
             for line in f:

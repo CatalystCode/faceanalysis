@@ -1,3 +1,4 @@
+from parser.pair import Pair
 from typing import Callable
 from typing import Iterable
 from typing import Union
@@ -9,12 +10,11 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
-from calculator import Calculator
-from distance_calculator import DistanceCalculator
-from metrics import DistanceMetric
-from metrics import ThresholdMetric
-from metrics import ThresholdMetricException
-from pair import Pair
+from calculator.calculator import Calculator
+from calculator.distance_calculator import DistanceCalculator
+from metrics.metrics import DistanceMetric
+from metrics.metrics import ThresholdMetric
+from metrics.metrics import ThresholdMetricException
 
 
 class ThresholdCalculator(Calculator):
