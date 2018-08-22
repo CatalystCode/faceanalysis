@@ -1,9 +1,8 @@
 from abc import ABC
 from abc import abstractmethod
+from parser.pair import Pair
 from typing import Any
 from typing import Iterator
-
-from pair import Pair
 
 
 class ParserBase(ABC):

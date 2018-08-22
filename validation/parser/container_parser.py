@@ -2,14 +2,14 @@ import json
 from os.path import basename
 from os.path import dirname
 from os.path import join
+from parser.pair import Pair
+from parser.pair_parser import PairParser
+from parser.parser_base import ParserBase
 from typing import Dict
 from typing import Iterator
 from typing import List
 
 import docker
-from pair import Pair
-from pair_parser import PairParser
-from parser_base import ParserBase
 
 
 class ContainerParser(ParserBase):

@@ -1,19 +1,19 @@
 from argparse import Namespace
+from parser.container_parser import ContainerParser
+from parser.face_vector_fill_parser import FaceVectorFillParser
+from parser.face_vector_parser import FaceVectorParser
+from parser.face_vector_remove_parser import FaceVectorRemoveParser
+from parser.pair_parser import PairParser
 
 import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
-from container_parser import ContainerParser
-from distance_calculator import DistanceCalculator
-from face_vector_fill_parser import FaceVectorFillParser
-from face_vector_parser import FaceVectorParser
-from face_vector_remove_parser import FaceVectorRemoveParser
-from metrics import EvaluationMetric
-from metrics import FaceVectorMetric
-from pair_parser import PairParser
-from threshold_calculator import ThresholdCalculator
+from calculator.distance_calculator import DistanceCalculator
+from calculator.threshold_calculator import ThresholdCalculator
+from metrics.metrics import EvaluationMetric
+from metrics.metrics import FaceVectorMetric
 
 
 class Evaluator:

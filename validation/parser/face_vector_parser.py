@@ -1,12 +1,12 @@
 from functools import partial
+from parser.container_parser import ContainerParser
+from parser.pair import Pair
+from parser.parser_base import ParserBase
+from parser.pipeline.parser_pipeline import ParserPipeline
+from parser.pipeline.parser_pipeline_funcs import filter_target
 from typing import Iterator
 
-from container_parser import ContainerParser
-from metrics import FaceVectorMetric
-from pair import Pair
-from parser_base import ParserBase
-from parser_pipeline import ParserPipeline
-from parser_pipeline_funcs import filter_target
+from metrics.metrics import FaceVectorMetric
 
 
 class FaceVectorParser(ParserBase):

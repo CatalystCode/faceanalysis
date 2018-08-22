@@ -1,6 +1,6 @@
-from container_parser import ContainerParser
-from face_vector_parser import FaceVectorParser
-from parser_pipeline_funcs import remove_empty
+from parser.container_parser import ContainerParser
+from parser.face_vector_parser import FaceVectorParser
+from parser.pipeline.parser_pipeline_funcs import remove_empty
 
 
 class FaceVectorRemoveParser(FaceVectorParser):

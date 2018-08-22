@@ -1,8 +1,8 @@
+from parser.pair import Pair
 from typing import Iterable
 from typing import Iterator
 
-from distance_calculator import DistanceCalculator
-from pair import Pair
+from calculator.distance_calculator import DistanceCalculator
 
 
 def fill_empty(pairs: Iterable[Pair], embedding_size: int) -> Iterator[Pair]:

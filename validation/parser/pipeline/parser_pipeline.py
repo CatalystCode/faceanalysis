@@ -1,9 +1,8 @@
+from parser.pair import Pair
 from typing import Callable
 from typing import Iterable
 from typing import Iterator
 from typing import List
-
-from pair import Pair
 
 PipelineFunction = Callable[[Iterable[Pair]], Iterator[Pair]]
 

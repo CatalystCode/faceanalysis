@@ -1,10 +1,9 @@
 from os.path import isfile
 from os.path import join
+from parser.pair import Pair
+from parser.parser_base import ParserBase
 from typing import Dict
 from typing import Iterator
-
-from pair import Pair
-from parser_base import ParserBase
 
 
 class PairParser(ParserBase):

@@ -1,9 +1,9 @@
 from argparse import ArgumentParser
 from argparse import Namespace
 
-from evaluator import Evaluator
-from metrics import DistanceMetric
-from metrics import ThresholdMetric
+from evaluator.evaluator import Evaluator
+from metrics.metrics import DistanceMetric
+from metrics.metrics import ThresholdMetric
 
 
 def _parse_arguments() -> Namespace:
