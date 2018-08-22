@@ -2,7 +2,7 @@ from parser.container_parser import ContainerParser
 from parser.pair import Pair
 from parser.parser_base import ParserBase
 from parser.pipeline.parser_pipeline import ParserPipeline
-from typing import Iterator
+from typing import Iterable
 
 from metrics.metrics import FaceVectorMetric
 
@@ -17,7 +17,7 @@ class FaceVectorParser(ParserBase):
         self._distance_metric = distance_metric
         self._parser_pipeline = parser_pipeline
 
-    def compute_pairs(self) -> Iterator[Pair]:
+    def compute_pairs(self) -> Iterable[Pair]:
         return self._parser_pipeline.execute_pipeline()
 
     def compute_metrics(self) -> FaceVectorMetric:

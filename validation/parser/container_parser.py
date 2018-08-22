@@ -6,7 +6,7 @@ from parser.pair import Pair
 from parser.pair_parser import PairParser
 from parser.parser_base import ParserBase
 from typing import Dict
-from typing import Iterator
+from typing import Iterable
 from typing import List
 
 import docker
@@ -29,7 +29,7 @@ class ContainerParser(ParserBase):
             self.__face_vectors = self._compute_face_vectors()
         return self.__face_vectors
 
-    def compute_pairs(self) -> Iterator[Pair]:
+    def compute_pairs(self) -> Iterable[Pair]:
         pairs = self._pair_parser.compute_pairs()
         return (Pair(image1, image2, pair.is_match)
                 for image1, image2, pair in
