@@ -1,15 +1,4 @@
-certifi==2018.8.13
-chardet==3.0.4
 docker==3.5.0
-docker-pycreds==0.3.0
-idna==2.7
-mypy==0.620
 numpy==1.15.1
-requests==2.19.1
 scikit-learn==0.19.2
 scipy==1.1.0
-six==1.11.0
-sklearn==0.0
-typed-ast==1.1.0
-urllib3==1.23
-websocket-client==0.51.0
