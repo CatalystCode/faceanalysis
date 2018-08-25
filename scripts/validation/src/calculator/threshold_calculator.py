@@ -17,6 +17,7 @@ from metrics.metrics import ThresholdMetric
 from metrics.metrics import ThresholdMetricException
 
 
+# pylint: disable=too-few-public-methods
 class ThresholdCalculator(Calculator):
 
     # pylint: disable=too-many-arguments

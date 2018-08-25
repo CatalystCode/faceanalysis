@@ -12,6 +12,7 @@ from metrics.metrics import DistanceMetric
 from metrics.metrics import DistanceMetricException
 
 
+# pylint: disable=too-few-public-methods
 class DistanceCalculator(Calculator):
 
     def __init__(self, distance_metric: Union[str, DistanceMetric]) -> None:
