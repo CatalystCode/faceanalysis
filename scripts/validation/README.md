@@ -13,7 +13,7 @@
 * Build the docker image with ```docker build -t validation .``` (in the directory with the Dockerfile)
 * An example of running the container:
 ```
-docker run -it \
+docker run \
 -v /aligned/images:/aligned/images \
 -v /aligned/pairs/pairs.txt:/aligned/pairs/pairs.txt \
 -v /var/run/docker.sock:/var/run/docker.sock \
