@@ -12,6 +12,7 @@ insightface = $(docker_repo)/faceanalysis_insightface:$(build_tag)
 get_famous_people_list = $(docker_repo)/faceanalysis_getfamouspeoplelist:$(build_tag)
 get_famous_people_photos = $(docker_repo)/faceanalysis_getfamouspeoplephotos:$(build_tag)
 preprocessor = $(docker_repo)/faceanalysis_preprocessor:$(build_tag)
+validation = $(docker_repo)/faceanalysis_validation:$(build_tag)
 
 .PHONY: build-dev
 build-dev:
@@ -28,6 +29,7 @@ build-scripts:
 	docker build -t "$(preprocessor)" ./scripts/preprocessor
 	docker build -t "$(get_famous_people_list)" ./scripts/get_famous_people_list
 	docker build -t "$(get_famous_people_photos)" ./scripts/get_famous_people_photos
+	docker build -t "$(validation)" ./scripts/validation
 
 .PHONY: build-algorithms
 build-algorithms:
@@ -53,18 +55,22 @@ pylint-scripts: build-scripts
 	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
 	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
 	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(preprocessor)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(validation)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py **/*.py **/**/*.py"
 
 .PHONY: flake8-scripts
 flake8-scripts: build-scripts
 	docker run --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install flake8 && flake8 *.py"
 	docker run --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install flake8 && flake8 *.py"
 	docker run --entrypoint=sh "$(preprocessor)" -c "pip -qq install flake8 && flake8 *.py"
+	# flake8 relies on an old version of pycodestyle that does not work with python 3.7 yet
+	# docker run --entrypoint=sh "$(validation)" -c "pip -qq install flake8 && flake8 *.py **/*.py **/**/*.py"
 
 .PHONY: mypy-scripts
 mypy-scripts: build-scripts
 	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
 	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
 	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(preprocessor)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(validation)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py **/*.py **/**/*.py"
 
 .PHONY: lint-scripts
 lint-scripts: pylint-scripts flake8-scripts mypy-scripts

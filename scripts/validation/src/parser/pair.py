@@ -4,9 +4,9 @@ from typing import TypeVar
 
 T = TypeVar('T')
 
-# pylint: disable=unsubscriptable-object
+
 @dataclass
-class Pair(Generic[T]):
+class Pair(Generic[T]):  # pylint: disable=unsubscriptable-object
     image1: T
     image2: T
     is_match: bool

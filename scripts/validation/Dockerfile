@@ -13,11 +13,11 @@ add-apt-repository \
 $(. /etc/os-release; echo "$ID") $(lsb_release -cs) stable" && \
 apt-get update && \
 apt-get -y install docker-ce
-WORKDIR /app
-COPY requirements.txt .
-COPY src src/
-RUN pip install -r requirements.txt
-CMD ["/bin/sh", "-c", "python /app/src/validate.py --image_dir $IMAGE_DIR \
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+COPY src /app/validation/src
+WORKDIR /app/validation/src
+CMD ["/bin/sh", "-c", "python validate.py --image_dir $IMAGE_DIR \
 --container_name $CONTAINER_NAME --distance_metric $DISTANCE_METRIC \
 --pairs_fname $PAIRS_FNAME --threshold_start $THRESHOLD_START --threshold_end \
 $THRESHOLD_END --threshold_step $THRESHOLD_STEP --embedding_size \

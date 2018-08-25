@@ -15,12 +15,12 @@ class PairParser(ParserBase):
 
     def compute_pairs(self) -> Iterable[Pair]:
         with open(self.pairs_fname, 'r', encoding='utf-8') as f:
-            next(f) # pylint: disable=stop-iteration-return
-                    # skip first line, which contains metadata
+            next(f)  # pylint: disable=stop-iteration-return
+            # skip first line, which contains metadata
             for line in f:
                 try:
                     pair = self._compute_pair(line)
-                except FileNotFoundError as e:
+                except FileNotFoundError:
                     logging.exception('Skipping invalid file')
                 else:
                     yield pair
