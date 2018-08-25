@@ -21,7 +21,7 @@ class PairParser(ParserBase):
                 try:
                     pair = self._compute_pair(line)
                 except FileNotFoundError as e:
-                    logging.exception(e)
+                    logging.exception('Skipping invalid file')
                 else:
                     yield pair
 
