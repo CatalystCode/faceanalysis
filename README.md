@@ -1,6 +1,6 @@
 # FaceAnalysis
 
-[![Travis CI status](https://api.travis-ci.org/c-w/faceanalysis.svg?branch=master)](https://travis-ci.org/c-w/faceanalysis)
+[![Travis CI status](https://api.travis-ci.org/CatalystCode/faceanalysis.svg?branch=master)](https://travis-ci.org/CatalystCode/faceanalysis)
 
 ## What's this?
 
