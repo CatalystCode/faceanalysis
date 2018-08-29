@@ -12,21 +12,4 @@
     * To run sibling containers, we mount the host machine's docker socket in the container. Docker commands from within the container will be handled by the host machine's daemon. 
 * Build the docker image with ```docker build -t validation .``` (in the directory with the Dockerfile)
 * An example of running the container:
-```
-docker run \
--v /aligned/images:/aligned/images \
--v /aligned/pairs/pairs.txt:/aligned/pairs/pairs.txt \
--v /var/run/docker.sock:/var/run/docker.sock \
--e IMAGE_DIR=/aligned/images \
--e CONTAINER_NAME=the_algorithm_container \
--e PAIRS_FNAME=/aligned/pairs/pairs.txt \
--e DISTANCE_METRIC=ANGULAR_DISTANCE \
--e THRESHOLD_START=0 \
--e THRESHOLD_END=4 \
--e THRESHOLD_STEP=0.01 \
--e EMBEDDING_SIZE=128 \
--e THRESHOLD_METRIC=ACCURACY \
--e REMOVE_EMPTY_EMBEDDINGS_FLAG=--remove_empty_embeddings_flag \
--e PREALIGNED_FLAG=--prealigned_flag \
-validation
-```
+```docker run -v /aligned/images:/aligned/images -v /aligned/pairs/pairs.txt:/aligned/pairs/pairs.txt -v /var/run/docker.sock:/var/run/docker.sock --image_dir /aligned/images --container_name the_algorithm_container --distance_metric ANGULAR_DISTANCE --pairs_fname /aligned/pairs/pairs.txt --threshold_start 0 --threshold_end 4 --threshold_step 0.01 --embedding_size 128 --threshold_metric ACCURACY --prealigned_flag --remove_empty_embeddings_flag```

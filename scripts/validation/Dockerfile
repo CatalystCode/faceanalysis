@@ -17,9 +17,4 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY src /app/validation/src
 WORKDIR /app/validation/src
-CMD ["/bin/sh", "-c", "python validate.py --image_dir $IMAGE_DIR \
---container_name $CONTAINER_NAME --distance_metric $DISTANCE_METRIC \
---pairs_fname $PAIRS_FNAME --threshold_start $THRESHOLD_START --threshold_end \
-$THRESHOLD_END --threshold_step $THRESHOLD_STEP --embedding_size \
-$EMBEDDING_SIZE --threshold_metric $THRESHOLD_METRIC $PREALIGNED_FLAG \
-$REMOVE_EMPTY_EMBEDDINGS_FLAG"]
+ENTRYPOINT ["python", "validate.py"]
