@@ -52,23 +52,23 @@ release-algorithms: build-algorithms
 
 .PHONY: pylint-scripts
 pylint-scripts: build-scripts
-	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
-	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
-	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(preprocessor)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/get_famous_people_list/src"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/get_famous_people_photos/src"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(preprocessor)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/preprocessor/src"
 	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(validation)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/validation/src"
 
 .PHONY: flake8-scripts
 flake8-scripts: build-scripts
-	docker run --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install flake8 && flake8 *.py"
-	docker run --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install flake8 && flake8 *.py"
-	docker run --entrypoint=sh "$(preprocessor)" -c "pip -qq install flake8 && flake8 *.py"
+	docker run --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install flake8 && flake8 /app/get_famous_people_list/src"
+	docker run --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install flake8 && flake8 /app/get_famous_people_photos/src"
+	docker run --entrypoint=sh "$(preprocessor)" -c "pip -qq install flake8 && flake8 /app/preprocessor/src"
 	docker run --entrypoint=sh "$(validation)" -c "pip -qq install flake8 && flake8 /app/validation/src"
 
 .PHONY: mypy-scripts
 mypy-scripts: build-scripts
-	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
-	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
-	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(preprocessor)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/get_famous_people_list/src"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/get_famous_people_photos/src"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(preprocessor)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/preprocessor/src"
 	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(validation)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/validation/src"
 
 .PHONY: lint-scripts
