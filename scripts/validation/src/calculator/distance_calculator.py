@@ -41,10 +41,7 @@ class DistanceCalculator(Calculator):
                 embeddings2,
                 metric='cosine')
             return np.arccos(similarity) / math.pi
-        metrics = [f'{DistanceMetric.__qualname__}.{attr}'
-                   for attr in dir(DistanceMetric)
-                   if not callable(getattr(DistanceMetric, attr))
-                   and not attr.startswith("__")]
+        metrics = [str(metric) for metric in DistanceMetric]
         err = f"Undefined {DistanceMetric.__qualname__}. \
 Choose from {metrics}"
         raise DistanceMetricException(err)

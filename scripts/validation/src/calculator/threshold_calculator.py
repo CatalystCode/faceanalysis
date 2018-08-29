@@ -64,10 +64,7 @@ class ThresholdCalculator(Calculator):
             return recall_score
         if self._threshold_metric == ThresholdMetric.F1:
             return f1_score
-        metrics = [f'{ThresholdMetric.__qualname__}.{attr}'
-                   for attr in dir(ThresholdMetric)
-                   if not callable(getattr(ThresholdMetric, attr))
-                   and not attr.startswith("__")]
+        metrics = [str(metric) for metric in ThresholdMetric]
         err = f"Undefined {ThresholdMetric.__qualname__}. \
 Choose from {metrics}"
         raise ThresholdMetricException(err)
