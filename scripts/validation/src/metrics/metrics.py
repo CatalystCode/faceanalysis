@@ -23,6 +23,12 @@ class EvaluationMetric:
     def precision(self):
         return self._precision
 
+    def __str__(self):
+        return 'Evaluation Metrics - accuracy: {:.2f}, \
+recall: {:.2f}, precision: {:.2f}'.format(self._accuracy,
+                                          self._recall,
+                                          self._precision)
+
 
 class FaceVectorMetric:
     def __init__(self,
@@ -44,6 +50,12 @@ class FaceVectorMetric:
     @property
     def percentage_missing(self):
         return self._percentage_missing
+
+    def __str__(self):
+        return 'Face Vector Metrics - num_expected: {}, \
+num_missing: {}, percentage_missing: {:.2f}'.format(self._num_expected,
+                                                    self.num_missing,
+                                                    self.percentage_missing)
 
 
 class DistanceMetric(Enum):
