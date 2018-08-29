@@ -21,9 +21,7 @@ def _parse_arguments() -> Namespace:
                         type=str,
                         required=True,
                         help='Name of docker container for face verification')
-    distance_metrics = [str(metric)
-                        .replace(f'{DistanceMetric.__qualname__}.', '')
-                        for metric in DistanceMetric]
+    distance_metrics = [str(metric) for metric in DistanceMetric]
     parser.add_argument(
         '--distance_metric',
         type=str,
@@ -43,10 +41,7 @@ def _parse_arguments() -> Namespace:
         type=float,
         required=True,
         help='Step size for iterating in cross validation search.')
-    threshold_metrics = [str(metric)
-                         .replace(f'{ThresholdMetric.__qualname__}.',
-                                  '')
-                         for metric in ThresholdMetric]
+    threshold_metrics = [str(metric) for metric in ThresholdMetric]
     parser.add_argument('--threshold_metric',
                         type=str,
                         required=True,

@@ -1,5 +1,5 @@
 # https://getintodevops.com/blog/the-simple-way-to-run-docker-in-docker-for-ci
-FROM python:3.7-slim
+FROM python:3.6-slim
 RUN apt-get update && \
 apt-get -y install apt-transport-https \
      ca-certificates \

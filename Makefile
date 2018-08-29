@@ -55,22 +55,21 @@ pylint-scripts: build-scripts
 	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
 	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
 	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(preprocessor)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
-	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(validation)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py **/*.py **/**/*.py"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(validation)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/validation/src"
 
 .PHONY: flake8-scripts
 flake8-scripts: build-scripts
 	docker run --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install flake8 && flake8 *.py"
 	docker run --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install flake8 && flake8 *.py"
 	docker run --entrypoint=sh "$(preprocessor)" -c "pip -qq install flake8 && flake8 *.py"
-	# flake8 relies on an old version of pycodestyle that does not work with python 3.7 yet
-	# docker run --entrypoint=sh "$(validation)" -c "pip -qq install flake8 && flake8 *.py **/*.py **/**/*.py"
+	docker run --entrypoint=sh "$(validation)" -c "pip -qq install flake8 && flake8 /app/validation/src"
 
 .PHONY: mypy-scripts
 mypy-scripts: build-scripts
 	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
 	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
 	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(preprocessor)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
-	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(validation)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py **/*.py **/**/*.py"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(validation)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/validation/src"
 
 .PHONY: lint-scripts
 lint-scripts: pylint-scripts flake8-scripts mypy-scripts
