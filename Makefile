@@ -12,6 +12,7 @@ insightface = $(docker_repo)/faceanalysis_insightface:$(build_tag)
 get_famous_people_list = $(docker_repo)/faceanalysis_getfamouspeoplelist:$(build_tag)
 get_famous_people_photos = $(docker_repo)/faceanalysis_getfamouspeoplephotos:$(build_tag)
 preprocessor = $(docker_repo)/faceanalysis_preprocessor:$(build_tag)
+validation = $(docker_repo)/faceanalysis_validation:$(build_tag)
 
 .PHONY: build-dev
 build-dev:
@@ -28,6 +29,7 @@ build-scripts:
 	docker build -t "$(preprocessor)" ./scripts/preprocessor
 	docker build -t "$(get_famous_people_list)" ./scripts/get_famous_people_list
 	docker build -t "$(get_famous_people_photos)" ./scripts/get_famous_people_photos
+	docker build -t "$(validation)" ./scripts/validation
 
 .PHONY: build-algorithms
 build-algorithms:
@@ -50,21 +52,24 @@ release-algorithms: build-algorithms
 
 .PHONY: pylint-scripts
 pylint-scripts: build-scripts
-	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
-	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
-	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(preprocessor)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc *.py"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/get_famous_people_list/src"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/get_famous_people_photos/src"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(preprocessor)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/preprocessor/src"
+	docker run -v $$PWD/app/.pylintrc:/app/.pylintrc --entrypoint=sh "$(validation)" -c "pip -qq install pylint && pylint --rcfile=/app/.pylintrc /app/validation/src"
 
 .PHONY: flake8-scripts
 flake8-scripts: build-scripts
-	docker run --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install flake8 && flake8 *.py"
-	docker run --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install flake8 && flake8 *.py"
-	docker run --entrypoint=sh "$(preprocessor)" -c "pip -qq install flake8 && flake8 *.py"
+	docker run --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install flake8 && flake8 /app/get_famous_people_list/src"
+	docker run --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install flake8 && flake8 /app/get_famous_people_photos/src"
+	docker run --entrypoint=sh "$(preprocessor)" -c "pip -qq install flake8 && flake8 /app/preprocessor/src"
+	docker run --entrypoint=sh "$(validation)" -c "pip -qq install flake8 && flake8 /app/validation/src"
 
 .PHONY: mypy-scripts
 mypy-scripts: build-scripts
-	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
-	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
-	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(preprocessor)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini *.py"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_list)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/get_famous_people_list/src"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(get_famous_people_photos)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/get_famous_people_photos/src"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(preprocessor)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/preprocessor/src"
+	docker run -v $$PWD/app/mypy.ini:/app/mypy.ini --entrypoint=sh "$(validation)" -c "pip -qq install mypy && mypy --config-file=/app/mypy.ini /app/validation/src"
 
 .PHONY: lint-scripts
 lint-scripts: pylint-scripts flake8-scripts mypy-scripts

@@ -8,8 +8,8 @@ from typing import TypeVar
 T = TypeVar('T')
 
 
-class Calculator(ABC, Generic[T]):
+class Calculator(ABC, Generic[T]):  # pylint: disable=too-few-public-methods
 
     @abstractmethod
-    def calculate(self, pair: Iterable[Pair]) -> T:
+    def calculate(self, pairs: Iterable[Pair]) -> T:
         pass

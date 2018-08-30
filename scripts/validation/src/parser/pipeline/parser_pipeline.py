@@ -3,6 +3,7 @@ from parser.pair import Pair
 from typing import Callable
 from typing import Iterable
 from typing import Optional
+from typing import cast
 
 PipelineFunction = Callable[[Iterable[Pair]], Iterable[Pair]]
 
@@ -21,7 +22,7 @@ class ParserPipeline:
     def _pairs(self) -> Iterable[Pair]:
         if not self.__pairs:
             self.__pairs = self._container_parser.compute_pairs()
-        return self.__pairs
+        return cast(Iterable[Pair], self.__pairs)
 
     def build(self, funcs: Iterable[Callable[[Iterable[Pair]],
                                              Iterable[Pair]]]) -> None:

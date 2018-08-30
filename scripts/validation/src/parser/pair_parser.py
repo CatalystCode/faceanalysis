@@ -1,3 +1,4 @@
+import logging
 from os.path import isfile
 from os.path import join
 from parser.pair import Pair
@@ -14,9 +15,15 @@ class PairParser(ParserBase):
 
     def compute_pairs(self) -> Iterable[Pair]:
         with open(self.pairs_fname, 'r', encoding='utf-8') as f:
-            next(f)  # skip first line, which contains metadata
+            next(f)  # pylint: disable=stop-iteration-return
+            # skip first line, which contains metadata
             for line in f:
-                yield self._compute_pair(line)
+                try:
+                    pair = self._compute_pair(line)
+                except FileNotFoundError:
+                    logging.exception('Skipping invalid file')
+                else:
+                    yield pair
 
     def compute_metrics(self) -> Dict[str, float]:
         raise NotImplementedError()

@@ -17,24 +17,22 @@ from metrics.metrics import ThresholdMetric
 from metrics.metrics import ThresholdMetricException
 
 
+# pylint: disable=too-few-public-methods
 class ThresholdCalculator(Calculator):
 
+    # pylint: disable=too-many-arguments
     def __init__(self,
                  distance_metric: Union[str, DistanceMetric],
                  threshold_metric: Union[str, ThresholdMetric],
                  threshold_start: float,
                  threshold_end: float,
                  threshold_step: float) -> None:
-        if type(threshold_metric) == str:
+        if isinstance(threshold_metric, str):
             self._threshold_metric = getattr(ThresholdMetric,
                                              cast(str, threshold_metric))
         else:
             self._threshold_metric = threshold_metric
-        if type(distance_metric) == str:
-            self._distance_metric = getattr(DistanceMetric,
-                                            cast(str, distance_metric))
-        else:
-            self._distance_metric = distance_metric
+        self._distance_metric = distance_metric
         self._threshold_start = threshold_start
         self._threshold_end = threshold_end
         self._threshold_step = threshold_step
@@ -60,17 +58,13 @@ class ThresholdCalculator(Calculator):
             self) -> Callable[[np.ndarray, np.ndarray], float]:
         if self._threshold_metric == ThresholdMetric.ACCURACY:
             return accuracy_score
-        elif self._threshold_metric == ThresholdMetric.PRECISION:
+        if self._threshold_metric == ThresholdMetric.PRECISION:
             return precision_score
-        elif self._threshold_metric == ThresholdMetric.RECALL:
+        if self._threshold_metric == ThresholdMetric.RECALL:
             return recall_score
-        elif self._threshold_metric == ThresholdMetric.F1:
+        if self._threshold_metric == ThresholdMetric.F1:
             return f1_score
-        else:
-            metrics = [f'{ThresholdMetric.__qualname__}.{attr}'
-                       for attr in dir(ThresholdMetric)
-                       if not callable(getattr(ThresholdMetric, attr))
-                       and not attr.startswith("__")]
-            err = f"Undefined {ThresholdMetric.__qualname__}. \
+        metrics = [str(metric) for metric in ThresholdMetric]
+        err = f"Undefined {ThresholdMetric.__qualname__}. \
 Choose from {metrics}"
-            raise ThresholdMetricException(err)
+        raise ThresholdMetricException(err)

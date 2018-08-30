@@ -44,8 +44,7 @@ def _parse_arguments() -> Namespace:
         required=True,
         help='Step size for iterating in cross validation search.')
     threshold_metrics = [str(metric)
-                         .replace(f'{ThresholdMetric.__qualname__}.',
-                                  '')
+                         .replace(f'{ThresholdMetric.__qualname__}.', '')
                          for metric in ThresholdMetric]
     parser.add_argument('--threshold_metric',
                         type=str,
