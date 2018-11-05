@@ -81,6 +81,7 @@ def lookup_matching_images(img_id: str) -> Tuple[List[str], List[float]]:
     with get_db_session() as session:
         matches = session.query(Match) \
             .filter(Match.this_img_id == img_id) \
+            .order_by(Match.distance_score.desc()) \
             .all()
 
     images = []
