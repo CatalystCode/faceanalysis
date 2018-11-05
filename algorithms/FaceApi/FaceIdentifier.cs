@@ -153,7 +153,7 @@ namespace FaceApi
                 {
                     try
                     {
-                        var result = await Client.LargeFaceList.AddFaceFromStreamAsync(groupId, stream);
+                        var result = await Client.LargeFaceList.AddFaceFromStreamAsync(groupId, stream, facePath);
                         await Console.Error.WriteLineAsync($"Uploaded {facePath}");
                         return result;
                     }
