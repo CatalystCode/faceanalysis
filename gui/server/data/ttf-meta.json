@@ -1,0 +1,25 @@
+{ "metadata": 
+  [
+    {
+      "id": "1234",
+      "uri": "/foobar/image1.png",
+      "fullName": "",
+      "fatherName": "John Lennon",
+      "motherName": "Yoko Ono"
+    },
+    {
+      "id": "1234",
+      "uri": "/foobar/image1.png",
+      "fullName": "",
+      "fatherName": "John Lennon",
+      "motherName": "Yoko Ono"
+    },
+    {
+      "id": "1234",
+      "uri": "/foobar/image1.png",
+      "fullName": "",
+      "fatherName": "John Lennon",
+      "motherName": "Yoko Ono"
+    }
+  ]
+}

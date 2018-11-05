@@ -6,5 +6,9 @@
       "node_modules/**/*.ts",
       "coverage/lcov-report/*.js"
     ]
+  },
+  "rules": {
+    "class-name" : false,
+    "interface-name": [true, "never-prefix"]
   }
 }
