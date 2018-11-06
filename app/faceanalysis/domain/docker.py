@@ -1,9 +1,10 @@
+from os.path import splitext
 from typing import IO
 from typing import List
 from typing import Tuple
+from uuid import uuid4
 
 from faceanalysis import tasks
-from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageAlreadyProcessed
 from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.log import get_logger
@@ -47,17 +48,10 @@ def get_processing_status(img_id: str) -> Tuple[str, str]:
 
 
 def upload_image(stream: IO[bytes], filename: str) -> str:
-    img_id = filename[:filename.find('.')]
+    img_id = str(uuid4())
+    image_extension = splitext(filename)[1]
 
-    with get_db_session() as session:
-        prev_img_upload = session.query(ImageStatus) \
-            .filter(ImageStatus.img_id == img_id) \
-            .first()
-
-    if prev_img_upload is not None:
-        raise DuplicateImage()
-
-    store_image(stream, filename)
+    store_image(stream, '{}{}'.format(img_id, image_extension))
     img_status = ImageStatus(img_id=img_id,
                              status=ImageStatusEnum.uploaded.name,
                              error_msg=None)
