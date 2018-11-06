@@ -16,7 +16,10 @@ from faceanalysis import domain
 from faceanalysis.domain.errors import ImageAlreadyProcessed
 from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.models import ImageStatusEnum
+from faceanalysis.models import delete_models
+from faceanalysis.models import init_models
 from faceanalysis.settings import ALLOWED_MIMETYPES
+from faceanalysis.settings import RESET_DATABASE_ENABLED
 
 JsonResponse = Union[dict, Tuple[dict, int]]
 
@@ -257,6 +260,13 @@ class ImgList(Resource):
     def get(self) -> JsonResponse:
         images = domain.list_images()
         return {'imgs': images}
+
+
+class ResetDatabase(Resource):
+    def get(self) -> JsonResponse:
+        delete_models()
+        init_models()
+        return {'status': 'DELETED'}
 # pylint: enable=no-self-use
 
 
@@ -265,3 +275,6 @@ api.add_resource(ProcessImg, '/api/v1/process_image/',
                  '/api/v1/process_image/<string:img_id>')
 api.add_resource(ImgMatchList, '/api/v1/image_matches/<string:img_id>')
 api.add_resource(ImgList, '/api/v1/images')
+
+if RESET_DATABASE_ENABLED:
+    api.add_resource(ResetDatabase, '/api/v1/reset')

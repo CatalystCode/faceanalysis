@@ -46,6 +46,8 @@ STORAGE_CONTAINER = environ.get('STORAGE_CONTAINER', 'images')
 
 DOCKER_DAEMON = environ.get('DOCKER_DAEMON', 'unix://var/run/docker.sock')
 
+RESET_DATABASE_ENABLED = environ.get('RESET_DATABASE') == 'TRUE'
+
 FACE_API_MODEL_ID = environ.get('FACE_API_MODEL_ID', '')
 FACE_API_ACCESS_KEY = environ.get('FACE_API_ACCESS_KEY', '')
 FACE_API_ENDPOINT = environ.get('FACE_API_ENDPOINT')
