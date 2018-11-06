@@ -111,4 +111,7 @@ ENV/
 .vscode/settings.json
 
 
-data/images
+# images that cannot be shared...
+data/images/private
+
+private
