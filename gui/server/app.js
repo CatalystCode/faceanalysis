@@ -9,6 +9,7 @@ var usersRouter = require('./routes/users');
 var metadataRouter = require('./routes/metadata');
 
 var app = express();
+const port = 3001;
 
 // this is the base directory where app.js - can't relay on __dirname 
 // as it's relative.
@@ -43,5 +44,7 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 module.exports = app;

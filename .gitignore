@@ -113,5 +113,5 @@ ENV/
 
 # images that cannot be shared...
 data/images/private
-
+node_modules
 private
