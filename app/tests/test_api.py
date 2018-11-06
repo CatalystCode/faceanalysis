@@ -125,11 +125,6 @@ class ApiTestCase(TestCase):
         self._process_img(img_id_not_yet_uploaded,
                           expected_status_code=HTTPStatus.BAD_REQUEST)
 
-    def test_upload_twice(self):
-        fname = '4.jpg'
-        self._upload_img(fname)
-        self._upload_img(fname, expected_status_code=HTTPStatus.BAD_REQUEST)
-
     @skipIf(FACE_VECTORIZE_ALGORITHM == 'FaceApi',
             reason='FaceApi can process multiple times')
     def test_upload_and_process_twice(self):

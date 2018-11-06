@@ -10,7 +10,6 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from faceanalysis import domain
-from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageAlreadyProcessed
 from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.settings import ALLOWED_EXTENSIONS
@@ -27,7 +26,6 @@ ERROR_IMAGE_DOES_NOT_EXIST = 'Image not yet uploaded'
 ERROR_BAD_IMAGE_FORMAT = ('Image upload failed: please use one of the '
                           'following extensions --> {}'
                           .format(ALLOWED_EXTENSIONS))
-ERROR_DUPLICATE_IMAGE = 'Image upload failed: image previously uploaded'
 
 
 # pylint: disable=no-self-use
@@ -77,11 +75,7 @@ class ImgUpload(Resource):
             return {'error_msg': ERROR_BAD_IMAGE_FORMAT},\
                    HTTPStatus.BAD_REQUEST.value
 
-        try:
-            img_id = domain.upload_image(image.stream, filename)
-        except DuplicateImage:
-            return {'error_msg': ERROR_DUPLICATE_IMAGE},\
-                    HTTPStatus.BAD_REQUEST.value
+        img_id = domain.upload_image(image.stream, filename)
 
         return {'img_id': img_id}
 
