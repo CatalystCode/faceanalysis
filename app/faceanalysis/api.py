@@ -18,6 +18,7 @@ from faceanalysis import domain
 from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageAlreadyProcessed
 from faceanalysis.domain.errors import ImageDoesNotExist
+from faceanalysis.models import ImageStatusEnum
 from faceanalysis.settings import ALLOWED_EXTENSIONS
 
 JsonResponse = Union[dict, Tuple[dict, int]]
@@ -117,7 +118,6 @@ class ProcessImg(Resource):
                    HTTPStatus.BAD_REQUEST.value
 
         return {'img_id': img_id}
-
 
     class ProcessImgStatusModel(Schema):
         type = 'object'
