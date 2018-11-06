@@ -22,7 +22,10 @@ JsonResponse = Union[dict, Tuple[dict, int]]
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
-api = Api(app, api_version='1', api_spec_url='/api/v1/swagger', title='Face analysis API')
+api = Api(app,
+          api_version='1',
+          api_spec_url='/api/v1/swagger',
+          title='Face analysis API')
 
 ERROR_USER_ALREADY_REGISTERED = 'User already registered'
 ERROR_IMAGE_ALREADY_PROCESSED = 'Image previously placed on queue'
@@ -96,7 +99,7 @@ class ProcessImg(Resource):
                 'description': 'Error message (can be null)'
             },
         }
-    
+
     @swagger.doc({
         'tags': ['status', ],
         'description': 'Get an image status from its UUID',
@@ -151,11 +154,13 @@ class ImgUpload(Resource):
                 }
             },
             '400': {
-                'description': 'Image already uploaded or mime type not allowed',
+                'description': 'Image already uploaded or mime type not '
+                               'allowed',
                 'schema': {'type': 'string', }
             },
             '500': {
-                'description': 'Something wrong happened when saving the image file or updating the status',
+                'description': 'Something wrong happened when saving the '
+                               'image file or updating the status',
                 'schema': {'type': 'string', }
             }
         }
@@ -197,7 +202,8 @@ class ImgMatchList(Resource):
             },
             'distances': {
                 'type': 'array',
-                'description': 'List of image distances corresponding to imgs array',
+                'description': 'List of image distances corresponding to '
+                               'imgs array',
                 'items': {
                     'type': 'number',
                     'format': 'float',
