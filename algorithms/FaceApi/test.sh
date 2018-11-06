@@ -95,10 +95,13 @@ find_similar_request="$(cat <<-EOM
 EOM
 )"
 
-similar_face_ids=($(curl -sf "${face_api_url}/face/v1.0/findsimilars" -H "Content-Type: application/json" -d "${find_similar_request}" | jq -r ".[] .persistedFaceId"))
+similar_faces=($(curl -sf "${face_api_url}/face/v1.0/findsimilars" -H "Content-Type: application/json" -d "${find_similar_request}" | jq -c ".[]"))
 
 similar_face_paths=()
-for similar_face_id in "${similar_face_ids[@]}"; do
+similar_face_scores=()
+for similar_face in "${similar_faces[@]}"; do
+  similar_face_id="$(<<< "${similar_face}" jq -r ".persistedFaceId")"
+  similar_face_scores+=("$(<<< "${similar_face}" jq -r ".confidence")")
   similar_face_paths+=("$(curl -sf "${face_api_url}/face/v1.0/largefacelists/${model_id}/persistedfaces/${similar_face_id}" | jq -r ".userData")")
 done
 
@@ -118,6 +121,15 @@ cat > "${output_path}" << EOM
     .match {
       display: inline-block;
     }
+    img {
+      max-width: 200px;
+    }
+    h3 {
+      width: 250px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
     </style>
   </head>
   <body>
@@ -127,10 +139,13 @@ cat > "${output_path}" << EOM
     </div>
 EOM
 
-for similar_face_path in "${similar_face_paths[@]}"; do
-cat >> "${output_path}" << EOM
+for i in "${!similar_face_paths[@]}"; do
+  similar_face_path="${similar_face_paths[$i]}"
+  confidence="${similar_face_scores[$i]}"
+  cat >> "${output_path}" << EOM
     <div class="match">
       <h3>Match: $(basename "$(windows_to_unix_path "${similar_face_path}")")</h3>
+      <div class="confidence">Confidence: ${confidence}</div>
       <img src="$(format_data_uri "${similar_face_path}")" />
     </div>
 EOM
