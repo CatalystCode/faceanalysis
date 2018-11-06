@@ -3,13 +3,6 @@ import './ImageViewer.css';
 
 import { ImageProperties } from '../constants';
 
-// export interface Props {
-//   url: string;
-//   alt?: string;
-//   width: number;
-//   height: number
-// }
-
 export const ImageViewer = (props: ImageProperties) => {
   const img = new Image(props.height, props.width);
   img.src = props.url;
