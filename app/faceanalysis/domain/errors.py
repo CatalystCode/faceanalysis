@@ -8,7 +8,3 @@ class ImageDoesNotExist(FaceAnalysisError):
 
 class ImageAlreadyProcessed(FaceAnalysisError):
     pass
-
-
-class DuplicateImage(FaceAnalysisError):
-    pass

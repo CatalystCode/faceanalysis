@@ -8,7 +8,6 @@ import cognitive_face
 from cognitive_face import CognitiveFaceException
 
 from faceanalysis import storage
-from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.log import get_logger
 from faceanalysis.models import FaceApiMapping
@@ -97,14 +96,6 @@ def _get_model_id() -> Tuple[str, bool]:
 def upload_image(stream: IO[bytes], filename: str) -> str:
     model_id, _ = _get_model_id()
     img_id = filename[:filename.find('.')]
-
-    with get_db_session() as session:
-        mapping = session.query(FaceApiMapping)\
-            .filter(FaceApiMapping.img_id == img_id)\
-            .first()
-
-    if mapping:
-        raise DuplicateImage()
 
     storage.store_image(stream, filename)
     image_path = storage.get_image_path(img_id)
