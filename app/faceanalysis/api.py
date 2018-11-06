@@ -7,7 +7,9 @@ from flask import g
 from flask_httpauth import HTTPBasicAuth
 from flask_restful import Resource
 from flask_restful.reqparse import RequestParser
-from flask_restful_swagger_2 import Api, swagger, Schema
+from flask_restful_swagger_2 import Api
+from flask_restful_swagger_2 import Schema
+from flask_restful_swagger_2 import swagger
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
