@@ -1,11 +1,8 @@
-from typing import Iterable
-from typing import List
-from typing import Optional
+from typing import Iterable, List, Optional
 
-from face_recognition import face_encodings
-from face_recognition import face_locations
-from face_recognition import load_image_file
 import numpy as np
+
+from face_recognition import face_encodings, face_locations, load_image_file
 
 FaceVector = List[float]
 Image = np.array

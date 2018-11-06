@@ -1,9 +1,9 @@
-import json
 import os
 from typing import List
 
 import numpy as np
 import tensorflow as tf
+
 from facenet_sandberg import Identifier, get_image_from_path_rgb
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

@@ -180,7 +180,9 @@ def match_images(thumbnail_urls: List[str], person: str) \
             # are of the same person
             for other in faces:
                 is_match, _ = identifier.compare_embedding(
-                    anchor_embedding, other.embedding, common_types.DistanceMetric.EUCLIDEAN_SQUARED)
+                    anchor_embedding,
+                    other.embedding,
+                    common_types.DistanceMetric.EUCLIDEAN_SQUARED)
                 if is_match:
                     urls.add(other.url)
             identifier.tear_down()
