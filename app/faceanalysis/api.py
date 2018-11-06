@@ -2,6 +2,7 @@ from http import HTTPStatus
 from mimetypes import guess_type
 from typing import Tuple
 from typing import Union
+from uuid import uuid4
 
 from flask import Flask
 from flask_restful import Resource
@@ -177,13 +178,16 @@ class ImgUpload(Resource):
         args = parser.parse_args()
         image = args['image']
         filename = secure_filename(image.filename)
-        mimetype = image.mimetype or guess_type(filename)[0] or ''
+        mimetype = image.mimetype or guess_type(filename)[0]
 
-        if mimetype.lower() not in ALLOWED_MIMETYPES:
+        if mimetype not in ALLOWED_MIMETYPES:
             return {'error_msg': ERROR_BAD_IMAGE_FORMAT},\
                    HTTPStatus.BAD_REQUEST.value
 
-        img_id = domain.upload_image(image.stream, filename)
+        img_id = str(uuid4())
+        image_type = mimetype.split('/')[1]
+        image_filename = '{}.{}'.format(img_id, image_type)
+        domain.upload_image(image.stream, image_filename)
 
         return {'img_id': img_id}
 
