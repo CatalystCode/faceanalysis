@@ -24,7 +24,7 @@ JsonResponse = Union[dict, Tuple[dict, int]]
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
-api = Api(app, api_version='1', api_spec_url='/api/v1/swagger', title="ICRC face analysis API")
+api = Api(app, api_version='1', api_spec_url='/api/v1/swagger', title='Face analysis API')
 basic_auth = HTTPBasicAuth()
 
 ERROR_USER_ALREADY_REGISTERED = 'User already registered'
