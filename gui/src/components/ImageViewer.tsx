@@ -1,16 +1,16 @@
 import * as React from 'react';
-// import { Image } from 'reactstrap';
-// import { Image } from 'react-dom'
 import './ImageViewer.css';
 
-export interface Props {
-  url: string;
-  alt?: string;
-  width: number;
-  height: number
-}
+import { ImageProperties } from '../constants';
 
-export const ImageViewer = (props: Props) => {
+// export interface Props {
+//   url: string;
+//   alt?: string;
+//   width: number;
+//   height: number
+// }
+
+export const ImageViewer = (props: ImageProperties) => {
   const img = new Image(props.height, props.width);
   img.src = props.url;
   
@@ -21,5 +21,4 @@ export const ImageViewer = (props: Props) => {
     </div>
   )
 }
-
 
