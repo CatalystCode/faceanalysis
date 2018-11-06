@@ -140,7 +140,11 @@ namespace FaceApi
 
         private async Task AddFaces(string groupId, string trainSetRoot)
         {
-            var images = Directory.EnumerateDirectories(trainSetRoot).SelectMany(person => Directory.EnumerateFiles(Path.Combine(trainSetRoot, person)));
+            var people = Directory.EnumerateDirectories(trainSetRoot).ToList();
+
+            var images = people.Count == 0
+                ? Directory.EnumerateFiles(trainSetRoot)
+                : people.SelectMany(person => Directory.EnumerateFiles(Path.Combine(trainSetRoot, person)));
 
             await Task.WhenAll(images.Select(image => AddFace(groupId, image)));
         }
