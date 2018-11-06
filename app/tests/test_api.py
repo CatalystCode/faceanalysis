@@ -1,4 +1,3 @@
-from base64 import b64encode
 from datetime import timedelta
 from http import HTTPStatus
 from io import BytesIO
@@ -26,11 +25,6 @@ class ApiTestCase(TestCase):
         app.testing = True
         self.app = app.test_client()
         init_models()
-        username = 'username'
-        password = 'password'
-        self._register_default_user(username, password)
-        token = self._get_token(username, password).get_json()['token']
-        self.headers = _get_basic_auth_headers(token, 'any value')
 
     def tearDown(self):
         delete_models()
@@ -39,27 +33,11 @@ class ApiTestCase(TestCase):
     def tearDownClass(cls):
         celery.control.purge()
 
-    def _register_default_user(self, username, password,
-                               expected_status_code=HTTPStatus.CREATED):
-        data = {'username': username, 'password': password}
-        response = self.app.post(API_VERSION + '/register_user', data=data)
-        self.assertEqual(response.status_code, expected_status_code.value)
-        ApiTestCase.has_registered_user = True
-        return response
-
-    def _get_token(self, username, password):
-        headers = _get_basic_auth_headers(username, password)
-        response = self.app.get(API_VERSION + '/token',
-                                headers=headers)
-        self.assertEqual(response.status_code, HTTPStatus.OK.value)
-        return response
-
     def _upload_img(self, fname, expected_status_code=HTTPStatus.OK):
         data = {'image': _load_test_image(fname)}
         response = self.app.post(API_VERSION + '/upload_image',
                                  content_type='multipart/form-data',
-                                 data=data,
-                                 headers=self.headers)
+                                 data=data)
         self.assertEqual(response.status_code, expected_status_code.value)
 
         return response.get_json().get('img_id')
@@ -67,20 +45,17 @@ class ApiTestCase(TestCase):
     def _process_img(self, img_id, expected_status_code=HTTPStatus.OK):
         data = {'img_id': img_id}
         response = self.app.post(API_VERSION + '/process_image',
-                                 data=data,
-                                 headers=self.headers)
+                                 data=data)
         self.assertEqual(response.status_code, expected_status_code.value)
         return response
 
     def _get_imgs(self, expected_status_code=HTTPStatus.OK):
-        response = self.app.get(API_VERSION + '/images/',
-                                headers=self.headers)
+        response = self.app.get(API_VERSION + '/images/')
         self.assertEqual(response.status_code, expected_status_code.value)
         return response
 
     def _get_matches(self, img_id, expected_status_code=HTTPStatus.OK):
-        response = self.app.get(API_VERSION + '/image_matches/' + img_id,
-                                headers=self.headers)
+        response = self.app.get(API_VERSION + '/image_matches/' + img_id)
         self.assertEqual(response.status_code, expected_status_code.value)
         return response
 
@@ -90,8 +65,7 @@ class ApiTestCase(TestCase):
             polling_interval=timedelta(seconds=5)):
 
         while wait_time.seconds > 0:
-            response = self.app.get(API_VERSION + '/process_image/' + img_id,
-                                    headers=self.headers)
+            response = self.app.get(API_VERSION + '/process_image/' + img_id)
             self.assertEqual(response.status_code, expected_status_code.value)
             if expected_status_code == HTTPStatus.BAD_REQUEST:
                 return response
@@ -191,13 +165,6 @@ class ApiTestCase(TestCase):
 
     def test_upload_arbitrarily_large_file(self):
         self.skipTest('Not implemented')
-
-
-def _get_basic_auth_headers(username_or_token, password):
-    encoding = username_or_token + ':' + password
-    auth_encoding = b64encode(encoding.encode()).decode('ascii')
-    headers = {'Authorization': 'Basic ' + auth_encoding}
-    return headers
 
 
 def _load_test_image(fname):
