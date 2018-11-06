@@ -10,6 +10,8 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from faceanalysis import domain
+from faceanalysis.models import init_models
+from faceanalysis.models import delete_models
 from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageAlreadyProcessed
 from faceanalysis.domain.errors import ImageDoesNotExist
@@ -99,8 +101,20 @@ class ImgList(Resource):
 # pylint: enable=no-self-use
 
 
+class ResetDatabase(Resource):
+    def get(self):
+        if os.environ.get('RESET_DATABASE', 'FALSE') != 'TRUE':
+            return {'status': 'unauthorized'}, codes.UNAUTHORIZED
+
+        delete_models(db.engine)
+        init_models(db.engine)
+
+        return {'status': 'DELETED'}, codes.OK
+
+
 api.add_resource(ImgUpload, '/api/v1/upload_image')
 api.add_resource(ProcessImg, '/api/v1/process_image/',
                  '/api/v1/process_image/<string:img_id>')
 api.add_resource(ImgMatchList, '/api/v1/image_matches/<string:img_id>')
 api.add_resource(ImgList, '/api/v1/images')
+api.add_resource(ResetDatabase, '/api/v1/reset')
