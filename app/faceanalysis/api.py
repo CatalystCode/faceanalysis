@@ -187,7 +187,7 @@ class ImgUpload(Resource):
         img_id = str(uuid4())
         image_type = mimetype.split('/')[1]
         image_filename = '{}.{}'.format(img_id, image_type)
-        domain.upload_image(image.stream, image_filename)
+        domain.upload_image(image.stream, img_id, image_filename)
 
         return {'img_id': img_id}
 
