@@ -143,7 +143,7 @@ class ApiTestCase(TestCase):
 
     def test_end_to_end_with_different_file_formats(self):
         # test jpg && png
-        self.assertIn('image/jpg', ALLOWED_MIMETYPES)
+        self.assertIn('image/jpeg', ALLOWED_MIMETYPES)
         self.assertIn('image/png', ALLOWED_MIMETYPES)
         fnames = {'11.jpg', '12.png'}
         self._test_end_to_end_with_matching_imgs(fnames)
