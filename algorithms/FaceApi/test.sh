@@ -78,7 +78,7 @@ format_data_uri() {
 
 image_extension="$(get_extension "${image_path}")"
 
-detected_face_ids="$(curl -sf "${face_api_url}/face/v1.0/detect" -F "form=@${image_path};type=image/${image_extension}" | jq -r ".[] .faceId")"
+detected_face_ids=($(curl -sf "${face_api_url}/face/v1.0/detect" -F "form=@${image_path};type=image/${image_extension}" | jq -r ".[] .faceId"))
 
 if [ "${#detected_face_ids[@]}" -ne 1 ]; then
   echo "Must have exactly one face in the image" >&2
