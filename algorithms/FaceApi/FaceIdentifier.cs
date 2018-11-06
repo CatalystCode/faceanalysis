@@ -80,7 +80,7 @@ namespace FaceApi
                         return true;
 
                     case TrainingStatusType.Failed:
-                        await Console.Error.WriteLineAsync($"Training of model {groupId} failed: ${status.Message}");
+                        await Console.Error.WriteLineAsync($"Training of model {groupId} failed: {status.Message}");
                         return false;
                 }
             }
