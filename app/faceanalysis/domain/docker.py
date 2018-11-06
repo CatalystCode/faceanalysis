@@ -1,8 +1,6 @@
-from os.path import splitext
 from typing import IO
 from typing import List
 from typing import Tuple
-from uuid import uuid4
 
 from faceanalysis import tasks
 from faceanalysis.domain.errors import ImageAlreadyProcessed
@@ -47,11 +45,8 @@ def get_processing_status(img_id: str) -> Tuple[str, str]:
     return img_status.status, img_status.error_msg
 
 
-def upload_image(stream: IO[bytes], filename: str) -> str:
-    img_id = str(uuid4())
-    image_extension = splitext(filename)[1]
-
-    store_image(stream, '{}{}'.format(img_id, image_extension))
+def upload_image(stream: IO[bytes], img_id: str, filename: str):
+    store_image(stream, filename)
     img_status = ImageStatus(img_id=img_id,
                              status=ImageStatusEnum.uploaded.name,
                              error_msg=None)
@@ -60,7 +55,6 @@ def upload_image(stream: IO[bytes], filename: str) -> str:
         session.add(img_status)
 
     logger.debug('Image %s uploaded', img_id)
-    return img_id
 
 
 def list_images() -> List[str]:

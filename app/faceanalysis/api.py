@@ -1,6 +1,8 @@
 from http import HTTPStatus
+from mimetypes import guess_type
 from typing import Tuple
 from typing import Union
+from uuid import uuid4
 
 from flask import Flask
 from flask_restful import Resource
@@ -17,7 +19,7 @@ from faceanalysis.domain.errors import ImageDoesNotExist
 from faceanalysis.models import ImageStatusEnum
 from faceanalysis.models import delete_models
 from faceanalysis.models import init_models
-from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import ALLOWED_MIMETYPES
 from faceanalysis.settings import RESET_DATABASE_ENABLED
 
 JsonResponse = Union[dict, Tuple[dict, int]]
@@ -33,8 +35,8 @@ ERROR_USER_ALREADY_REGISTERED = 'User already registered'
 ERROR_IMAGE_ALREADY_PROCESSED = 'Image previously placed on queue'
 ERROR_IMAGE_DOES_NOT_EXIST = 'Image not yet uploaded'
 ERROR_BAD_IMAGE_FORMAT = ('Image upload failed: please use one of the '
-                          'following extensions --> {}'
-                          .format(ALLOWED_EXTENSIONS))
+                          'following MIME types --> {}'
+                          .format(ALLOWED_MIMETYPES))
 
 
 # pylint: disable=no-self-use
@@ -176,12 +178,16 @@ class ImgUpload(Resource):
         args = parser.parse_args()
         image = args['image']
         filename = secure_filename(image.filename)
+        mimetype = image.mimetype or guess_type(filename)[0]
 
-        if not any(filename.endswith(ext) for ext in ALLOWED_EXTENSIONS):
+        if mimetype not in ALLOWED_MIMETYPES:
             return {'error_msg': ERROR_BAD_IMAGE_FORMAT},\
                    HTTPStatus.BAD_REQUEST.value
 
-        img_id = domain.upload_image(image.stream, filename)
+        img_id = str(uuid4())
+        image_type = mimetype.split('/')[1]
+        image_filename = '{}.{}'.format(img_id, image_type)
+        domain.upload_image(image.stream, img_id, image_filename)
 
         return {'img_id': img_id}
 

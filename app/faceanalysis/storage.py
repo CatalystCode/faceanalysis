@@ -9,7 +9,7 @@ from libcloud.storage.types import ObjectError
 from libcloud.storage.types import Provider
 
 from faceanalysis.log import get_logger
-from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import ALLOWED_MIMETYPES
 from faceanalysis.settings import STORAGE_PROVIDER
 from faceanalysis.settings import STORAGE_KEY
 from faceanalysis.settings import STORAGE_SECRET
@@ -17,6 +17,8 @@ from faceanalysis.settings import STORAGE_CONTAINER
 
 
 logger = get_logger(__name__)
+allowed_extensions = tuple(mimetype.split('/')[1]
+                           for mimetype in ALLOWED_MIMETYPES)
 
 
 class StorageError(Exception):
@@ -36,7 +38,7 @@ def _get_storage_service() -> Container:
 
 def _get_image(img_id: str) -> Object:
     container = _get_storage_service()
-    for extension in ALLOWED_EXTENSIONS:
+    for extension in allowed_extensions:
         image_name = '{}.{}'.format(img_id, extension)
         try:
             image = container.get_object(image_name)

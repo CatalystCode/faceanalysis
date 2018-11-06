@@ -16,9 +16,9 @@ CELERY_BROKER = 'pyamqp://{user}:{password}@{host}'.format(
     password=environ.get('RABBITMQ_PASSWORD', 'guest'),
     host=environ['RABBITMQ_HOST'])
 
-ALLOWED_EXTENSIONS = set(
-    environ.get('ALLOWED_IMAGE_FILE_EXTENSIONS', '')
-    .lower().split('_')) - {''}
+ALLOWED_MIMETYPES = set(
+    environ.get('ALLOWED_IMAGE_MIMETYPES', '')
+    .lower().split(';')) - {''}
 
 DISTANCE_SCORE_THRESHOLD = float(environ.get(
     'DISTANCE_SCORE_THRESHOLD',
