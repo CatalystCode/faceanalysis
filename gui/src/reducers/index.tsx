@@ -8,6 +8,7 @@ const initialState = {
   targetImage: {} as ImageProperties,
   candidateImages: {} as ImageProperties[]
 };
+
 const rootReducer = (state = initialState, action: ActionWithPayload<ImageProperties>  ) => {
   switch (action.type){
     case ADD_IMAGE:
