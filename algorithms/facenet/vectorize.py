@@ -4,7 +4,7 @@ from typing import List
 
 import numpy as np
 import tensorflow as tf
-from facenet_sandberg import face
+from facenet_sandberg import Identifier, get_image_from_path_rgb
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.logging.set_verbosity(tf.logging.ERROR)
@@ -15,9 +15,9 @@ Image = np.array
 
 def get_face_vectors_batch(
         img_paths: List[str], prealigned: bool) -> List[List[FaceVector]]:
-    identifier = face.Identifier(model_checkpoint='facenet_model.pb')
+    identifier = Identifier(model_path='facenet_model.pb')
 
-    images = map(identifier.get_image_from_path, img_paths)
+    images = map(get_image_from_path_rgb, img_paths)
     all_vectors = identifier.vectorize_all(images, prealigned=prealigned)
     np_to_list = []
     for vectors in all_vectors:

@@ -1,2 +1,2 @@
 tensorflow==1.7
-facenet_sandberg==1.0.16
+facenet_sandberg==0.0.1
