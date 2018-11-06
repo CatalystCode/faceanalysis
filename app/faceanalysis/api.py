@@ -13,7 +13,7 @@ from faceanalysis import domain
 from faceanalysis.domain.errors import DuplicateImage
 from faceanalysis.domain.errors import ImageAlreadyProcessed
 from faceanalysis.domain.errors import ImageDoesNotExist
-from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import ALLOWED_MIMETYPES
 
 JsonResponse = Union[dict, Tuple[dict, int]]
 
@@ -25,8 +25,8 @@ ERROR_USER_ALREADY_REGISTERED = 'User already registered'
 ERROR_IMAGE_ALREADY_PROCESSED = 'Image previously placed on queue'
 ERROR_IMAGE_DOES_NOT_EXIST = 'Image not yet uploaded'
 ERROR_BAD_IMAGE_FORMAT = ('Image upload failed: please use one of the '
-                          'following extensions --> {}'
-                          .format(ALLOWED_EXTENSIONS))
+                          'following MIME types --> {}'
+                          .format(ALLOWED_MIMETYPES))
 ERROR_DUPLICATE_IMAGE = 'Image upload failed: image previously uploaded'
 
 
@@ -73,7 +73,7 @@ class ImgUpload(Resource):
         image = args['image']
         filename = secure_filename(image.filename)
 
-        if not any(filename.endswith(ext) for ext in ALLOWED_EXTENSIONS):
+        if image.mimetype not in ALLOWED_MIMETYPES:
             return {'error_msg': ERROR_BAD_IMAGE_FORMAT},\
                    HTTPStatus.BAD_REQUEST.value
 

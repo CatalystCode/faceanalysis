@@ -12,7 +12,7 @@ from faceanalysis.api import app
 from faceanalysis.models import ImageStatusEnum
 from faceanalysis.models import delete_models
 from faceanalysis.models import init_models
-from faceanalysis.settings import ALLOWED_EXTENSIONS
+from faceanalysis.settings import ALLOWED_MIMETYPES
 from faceanalysis.settings import FACE_VECTORIZE_ALGORITHM
 from faceanalysis.tasks import celery
 
@@ -148,8 +148,8 @@ class ApiTestCase(TestCase):
 
     def test_end_to_end_with_different_file_formats(self):
         # test jpg && png
-        self.assertIn('jpg', ALLOWED_EXTENSIONS)
-        self.assertIn('png', ALLOWED_EXTENSIONS)
+        self.assertIn('image/jpg', ALLOWED_MIMETYPES)
+        self.assertIn('image/png', ALLOWED_MIMETYPES)
         fnames = {'11.jpg', '12.png'}
         self._test_end_to_end_with_matching_imgs(fnames)
 
