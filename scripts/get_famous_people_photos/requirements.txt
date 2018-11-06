@@ -5,7 +5,7 @@ numpy
 scipy
 scikit-learn
 opencv_python
-facenet_sandberg
+facenet_sandberg===0.0.1
 h5py
 matplotlib
 Pillow

@@ -6,20 +6,20 @@ from io import BytesIO
 from itertools import islice
 from multiprocessing import Lock, Value
 from multiprocessing.dummy import Pool as ThreadPool
-from os import getenv, cpu_count, environ, makedirs
-from os.path import isfile, exists, join
-from typing import Generator, List, Set, Tuple, Callable
+from os import cpu_count, environ, getenv, makedirs
+from os.path import exists, isfile, join
+from typing import Callable, List, Set, Tuple
 
-import dhash
 import numpy as np
 import progressbar as pb
-import pybktree
 import requests
-from PIL import Image
-# pylint: disable=no-name-in-module
-from facenet_sandberg import face as facenet
 # pylint: enable=no-name-in-module
 from pathos.multiprocessing import ProcessPool
+from PIL import Image
+
+import dhash
+import pybktree
+from facenet_sandberg import Identifier, common_types, utils
 
 environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 BING_API_KEY = str(getenv('BING_API_KEY', ''))
@@ -32,28 +32,28 @@ HEADERS = {"Ocp-Apim-Subscription-Key": BING_API_KEY}
 
 IMAGE_HASH = collections.namedtuple('IMAGE_HASH', 'bits url')
 
-timer: pb.ProgressBar = None
-counter = Value(c_int)  # type: ignore
-counter_lock = Lock()
+TIMER = None
+COUNTER = Value(c_int)  # type: ignore
+COUNTER_LOCK = Lock()
 
 
-FACENET_MODEL_CHECKPOINT = "../../common/models/20180402-114759.pb"
+FACENET_MODEL_CHECKPOINT = "../../common/models/facenet_model.pb"
 FAMOUS_PEOPLE_FILE = '../../common/text_files/famous_people.txt.gz'
 URL_FILE = '../../common/text_files/image_urls.data'
 IMAGES_DIRECTORY = '../../common/images/'
 
 
 def increment(add_amount: int = 1):
-    with counter_lock:
-        counter.value += add_amount
+    with COUNTER_LOCK:
+        COUNTER.value += add_amount
 
 
 # pylint: disable=global-statement
 def reset():
-    global timer
-    with counter_lock:
-        counter.value = 0
-    timer = None
+    global TIMER
+    with COUNTER_LOCK:
+        COUNTER.value = 0
+    TIMER = None
 # pylint: enable=global-statement
 
 
@@ -75,7 +75,7 @@ def get_photos(famous_people_file: str):
 
     multiprocess(download_urls, deduped_urls, people,
                  total_count, 'downloading images')
-    timer.finish()
+    TIMER.finish()
 
 
 # pylint: disable=global-statement
@@ -83,12 +83,12 @@ def fetch_urls_multithread(unique_people: Set[str], total_count: int) \
         -> Tuple[List[List[str]], List[str]]:
 
     print("[INFO] Fetching image urls with {} threads".format(NUM_THREADS))
-    global timer
+    global TIMER
     widgets_urls = ['Fetching urls: ', pb.Percentage(), ' ',
                     pb.Bar(marker=pb.RotatingMarker()), ' ', pb.ETA()]
     # Check if we have cached our image urls
     if not isfile(URL_FILE):
-        timer = pb.ProgressBar(widgets=widgets_urls,
+        TIMER = pb.ProgressBar(widgets=widgets_urls,
                                maxval=total_count).start()
 
         thread_pool = ThreadPool(NUM_THREADS)
@@ -114,10 +114,10 @@ def multiprocess(func: Callable,
                  total_count: int,
                  info: str) -> Tuple[List[List[str]], List[str]]:
     print("[INFO] {} with {} processes".format(info, NUM_PROCESSES))
-    global timer
+    global TIMER
     widgets_match = ['{}: '.format(info), pb.Percentage(), ' ',
                      pb.Bar(marker=pb.RotatingMarker()), ' ', pb.ETA()]
-    timer = pb.ProgressBar(widgets=widgets_match, maxval=total_count).start()
+    TIMER = pb.ProgressBar(widgets=widgets_match, maxval=total_count).start()
 
     if NUM_PROCESSES > 1:
         process_pool = ProcessPool(NUM_PROCESSES)
@@ -144,7 +144,7 @@ def get_urls(person: str) -> Tuple[List[str], str]:
                       '&c=7&w=250&h=250' for img in results["value"]]
     # update counter
     increment()
-    timer.update(int(counter.value))
+    TIMER.update(int(COUNTER.value))
     return thumbnail_urls, person
 
 
@@ -152,8 +152,8 @@ def get_urls(person: str) -> Tuple[List[str], str]:
 def safe_match_images(*args, **kwargs):
     try:
         return match_images(*args, **kwargs)
-    except Exception as e:
-        print(e)
+    except Exception as exception:
+        print(exception)
 # pylint: enable=broad-except
 
 
@@ -167,31 +167,29 @@ def match_images(thumbnail_urls: List[str], person: str) \
     if not exists(directory) and len(thumbnail_urls) > 10:
         # Make sure all the matches are of the same person
         try:
-            identifier = facenet.Identifier(
+            identifier = Identifier(
                 threshold=1.0,
-                facenet_model_checkpoint=FACENET_MODEL_CHECKPOINT)
-            images = map(identifier.download_image, thumbnail_urls)
-            all_faces: Generator[List[facenet.Face], None, None] = \
-                identifier.detect_encode_all(images, urls=thumbnail_urls,
-                                             save_memory=True)
+                model_path=FACENET_MODEL_CHECKPOINT)
+            images = map(utils.download_image, thumbnail_urls)
+            all_faces = identifier.detect_encode_all(
+                images, urls=thumbnail_urls, save_memory=True)
             # Flattens the lists of faces into one generator
             faces = (face for faces in all_faces for face in faces)
-            # import pdb;pdb.set_trace()
             anchor_embedding = list(islice(faces, 1))[0].embedding
             # Assume first image is of the right person and check other images
             # are of the same person
             for other in faces:
                 is_match, _ = identifier.compare_embedding(
-                    anchor_embedding, other.embedding)
+                    anchor_embedding, other.embedding, common_types.DistanceMetric.EUCLIDEAN_SQUARED)
                 if is_match:
                     urls.add(other.url)
             identifier.tear_down()
             del identifier
-        except Exception as e:
-            print(e)
+        except Exception as exception:
+            print(exception)
     # Update counter
     increment()
-    timer.update(int(counter.value))
+    TIMER.update(int(COUNTER.value))
     return list(urls), person
 # pylint: enable=broad-except
 
@@ -217,7 +215,7 @@ def dedupe_images(matched_urls: List[str], person: str) \
             urls_to_keep.add(image_hash.url)
     # Update counter
     increment()
-    timer.update(int(counter.value))
+    TIMER.update(int(COUNTER.value))
     return list(urls_to_keep), person
 
 
@@ -240,7 +238,7 @@ def download_urls(deduped_urls: List[str], person: str):
             image.save(image_path + '.jpg')
     # update counter
     increment()
-    timer.update(int(counter.value))
+    TIMER.update(int(COUNTER.value))
     return None, None
 
 

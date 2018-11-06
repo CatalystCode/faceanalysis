@@ -10,7 +10,7 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 RUN mkdir -p /app/common/{text_files,models,images}
 RUN wget -P /app/common/text_files https://redcrossstorage.blob.core.windows.net/textfiles/famous_people.txt.gz
 RUN wget -P /app/common/text_files https://redcrossstorage.blob.core.windows.net/textfiles/image_urls.data
-RUN wget -P /app/common/models https://redcrossstorage.blob.core.windows.net/models/20180402-114759.pb
+RUN wget -P /app/common/models https://redcrossstorage.blob.core.windows.net/models/facenet_model.pb
 
 COPY src /app/get_famous_people_photos/src
 WORKDIR /app/get_famous_people_photos/src
