@@ -114,10 +114,15 @@ cat > "${output_path}" << EOM
 <html>
   <head>
     <title>Matches for ${image_path}</title>
+    <style>
+    .match {
+      display: inline-block;
+    }
+    </style>
   </head>
   <body>
     <div class="source">
-      <h3>Source: ${image_path}</h3>
+      <h3>Source: $(basename "$(windows_to_unix_path "${image_path}")")</h3>
       <img src="$(format_data_uri "${image_path}")" />
     </div>
 EOM
@@ -125,7 +130,7 @@ EOM
 for similar_face_path in "${similar_face_paths[@]}"; do
 cat >> "${output_path}" << EOM
     <div class="match">
-      <h3>Match: ${similar_face_path}</h3>
+      <h3>Match: $(basename "$(windows_to_unix_path "${similar_face_path}")")</h3>
       <img src="$(format_data_uri "${similar_face_path}")" />
     </div>
 EOM
