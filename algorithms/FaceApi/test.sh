@@ -32,7 +32,7 @@ match_mode="matchPerson"
 while getopts ":o:n:m:" opt; do
   case "${opt}" in
     o) output_path="${OPTARG}"
-       if [ ! -d "$(dirname "${output_path}")" ]; then
+       if [[ ! -d "$(dirname "${output_path}")" ]]; then
          echo "Must set argument -o output_path to a valid path" >&2
          exit 2
        fi ;;
@@ -42,7 +42,7 @@ while getopts ":o:n:m:" opt; do
          exit 2
        fi ;;
     m) match_mode="${OPTARG}"
-       if [ "${match_mode}" != "matchPerson" ] && [ "${match_mode}" != "matchFace" ]; then
+       if [[ "${match_mode}" != "matchPerson" ]] && [[ "${match_mode}" != "matchFace" ]]; then
          echo "Must set argument -m match_mode to matchPerson or matchFace" >&2
          exit 2
        fi ;;
@@ -54,7 +54,7 @@ face_api_url="$1"
 model_id="$2"
 image_path="$3"
 
-if [ -z "${face_api_url}" ] || [ -z "${model_id}" ] || [ ! -f "${image_path}" ]; then
+if [[ -z "${face_api_url}" ]] || [[ -z "${model_id}" ]] || [[ ! -f "${image_path}" ]]; then
   echo "Must provide FaceAPI URL, largeFaceListId, and image path arguments" >&2
   exit 3
 fi
@@ -80,7 +80,7 @@ image_extension="$(get_extension "${image_path}")"
 
 detected_face_ids=($(curl -sf "${face_api_url}/face/v1.0/detect" -F "form=@${image_path};type=image/${image_extension}" | jq -r ".[] .faceId"))
 
-if [ "${#detected_face_ids[@]}" -ne 1 ]; then
+if [[ "${#detected_face_ids[@]}" -ne 1 ]]; then
   echo "Must have exactly one face in the image" >&2
   exit 4
 fi
@@ -109,7 +109,7 @@ for similar_face_path in "${similar_face_paths[@]}"; do
   echo "${similar_face_path}"
 done
 
-if [ -z "${output_path}" ]; then
+if [[ -z "${output_path}" ]]; then
   exit 0
 fi
 
