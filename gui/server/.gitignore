@@ -60,3 +60,6 @@ typings/
 # next.js build output
 .next
 
+# secure data files
+/data/ttf_records.csv
+/data/sample_records.csv

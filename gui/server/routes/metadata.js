@@ -5,15 +5,16 @@ const provider = require('../providers/metadataprovider');
 const router = express.Router();
 
 /* GET home page. */
-router.get('/meta', function(req, res, next) {
+router.get('/meta', function (req, res, next) {
   const metadata = fs.readFileSync(path.join(__basedir, 'data/ttf-meta.json'));
   console.log(__dirname);
   res.send(metadata);
+})
 
 /* GET all case metadata. */
-router.get('/', function(req, res, next) {
+router.get('/', function (req, res, next) {
   provider.getmetadata((err, metatdata) => {
-    if( err ) {
+    if (err) {
     } else {
       console.log(metatdata);
     }
@@ -21,9 +22,9 @@ router.get('/', function(req, res, next) {
 });
 
 /* GET case metadata by id. */
-router.get('/:id', function(req, res, next) {
+router.get('/:id', function (req, res, next) {
   provider.getmetadatabyid(req.params.id, (err, metatdata) => {
-    if( err ) {
+    if (err) {
     } else {
       console.log(metatdata);
     }
