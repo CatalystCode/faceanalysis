@@ -1,10 +1,10 @@
 import { ADD_IMAGE, SHOW_IMAGE, SET_SUBJECT, SET_TARGET, CLEAR_CANDIDATES } from '../actions/images';
 
-export function images(
+export const images = (
   state = {
     data: [],
     errorMessage: ''
-  }, action) {
+  }, action) => {
   switch (action.type) {
     case ADD_IMAGE:
       return Object.assign({}, state,

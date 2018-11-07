@@ -5,6 +5,9 @@ export const SET_TARGET = "SET_TARGET";
 export const CLEAR_CANDIDATES = "CLEAR_CANDIDATES";
 
 
+export const getImages = () =>{
+  
+}
 
 
 // import { ImageProperties, SET_SUBJECT, SET_TARGET, CLEAR_CANDIDATES, ADD_IMAGE } from '../constants';
