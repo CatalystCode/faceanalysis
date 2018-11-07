@@ -109,3 +109,6 @@ ENV/
 
 # VS code settings
 .vscode/settings.json
+
+node_modules
+private
