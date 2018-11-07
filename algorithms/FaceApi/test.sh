@@ -7,8 +7,9 @@
 #     (-o output_path) (-n max_candidates) (-m match_mode)
 #     [faceApiUrl] [largeFaceListId] [inputImagePath]
 #
-# The script will output the paths of all the images that match the input
-# image, one per lines.
+# The script will output as tab separated values the original image path,
+# the paths of all the images that match the input image, and the match
+# confidence.
 #
 # Options:
 #   -o output_path: store a summary result HTML file (default: no file)
@@ -105,8 +106,10 @@ for similar_face in "${similar_faces[@]}"; do
   similar_face_paths+=("$(curl -sf "${face_api_url}/face/v1.0/largefacelists/${model_id}/persistedfaces/${similar_face_id}" | jq -r ".userData")")
 done
 
-for similar_face_path in "${similar_face_paths[@]}"; do
-  echo "${similar_face_path}"
+for i in "${!similar_face_paths[@]}"; do
+  similar_face_path="${similar_face_paths[$i]}"
+  confidence="${similar_face_scores[$i]}"
+  printf "%s\t%s\t%s\n" "${image_path}" "${similar_face_path}" "${confidence}"
 done
 
 if [[ -z "${output_path}" ]]; then
