@@ -1,13 +1,9 @@
-import { ActionWithPayload, ImageProperties } 
+import { ActionWithPayload, ImageProperties, initialState } 
   from '../constants';
 import { ADD_IMAGE, SET_SUBJECT, SET_TARGET, CLEAR_CANDIDATES  } 
   from '../constants';
 
-const initialState = {
-  subjectImage: {} as ImageProperties,
-  targetImage: {} as ImageProperties,
-  candidateImages: {} as ImageProperties[]
-};
+
 
 const rootReducer = (state = initialState, action: ActionWithPayload<ImageProperties>  ) => {
   switch (action.type){
