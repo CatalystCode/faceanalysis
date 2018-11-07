@@ -5,8 +5,11 @@ export const SET_TARGET = "SET_TARGET";
 export const CLEAR_CANDIDATES = "CLEAR_CANDIDATES";
 
 
-export const getImages = () =>{
-  
+export const getImages = () => {
+  return {
+    type: ADD_IMAGE,
+    payload: { foo: "bar" }
+  };
 }
 
 

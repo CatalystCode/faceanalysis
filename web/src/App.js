@@ -6,7 +6,7 @@ import { browserHistory } from 'react-router';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import MainPage from './components/MainPage';
-import configureStore from './redux/configureStore';
+import {configureStore} from './redux/configureStore';
 
 
 const store = configureStore(window.__STATE__);

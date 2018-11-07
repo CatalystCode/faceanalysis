@@ -6,6 +6,7 @@
     "axios": "^0.18.0",
     "concurrently": "^4.0.1",
     "prop-types": "^15.6.2",
+    "raven-js": "^3.27.0",
     "react": "^16.6.1",
     "react-dom": "^16.6.1",
     "react-redux": "^5.1.0",
@@ -22,7 +23,6 @@
     "all": "npx concurrently \"yarn start:client\" \"yarn start:server\"",
     "start:server": "cd server && npx yarn start",
     "start:client": "react-scripts start"
-
   },
   "proxy": "http://localhost:3001/api",
   "eslintConfig": {
