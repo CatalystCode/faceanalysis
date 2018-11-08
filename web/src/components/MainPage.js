@@ -4,10 +4,23 @@ import PropTypes from 'prop-types';
 
 import { getImages } from '../redux/actions/images';
 
+let createHandlers = function(dispatch) {
+  let onLoad = function(node, data) {
+    dispatch(getImages(data))
+  };
+
+  return {
+    onLoad,
+    // other handlers
+  };
+}
+
+
 class MainPage extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      data: [],
       subjectImage: {},
       targetImage : {},
       candidateImages: [],
@@ -15,12 +28,14 @@ class MainPage extends Component {
       isLoading: false,
       appData: {}
     };
-    // this.handler = this.handler.bind(this);
+    this.handlers = createHandlers(this.props.dispatch);
+    // this.handler = this.handler.bind(this); 
   }
 
   componentDidMount() {
     // fetch the data...
-    this.props.getImages();
+    this.handlers.onLoad();
+    // this.props.store.dispatch(getImages())
   }
 
   handler(val) {
@@ -28,6 +43,7 @@ class MainPage extends Component {
   }
 
   render() {
+    this.handlers.onLoad();
     return (
       <div>
         <div>TBD</div>
@@ -42,11 +58,11 @@ class MainPage extends Component {
 }
 
 MainPage.defaultProps = {};
-MainPage.propTypes = {};
+// MainPage.propTypes = {};
 
 const mapStateToProps = (state) => {
   return {
-    subjectImage: state.images.data, // object of meta and URI
+    data: state.images.data, // object of meta and URI
     // targetImage: state.images.targetImage.data, // object of meta and URI
     // candidateImages: state.images.candidateImages.data, // an array
     hasErrored: state.images.hasErrored,
@@ -55,15 +71,7 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps,
-  { getImages })(MainPage);
+// export default connect(mapStateToProps,
+//   { getImages })(MainPage);
 
-// export default MainPage;
-
-
-// export interface ImageProperties {
-//     url: string;
-//     alt?: string;
-//     width: number;
-//     height: number
-//   }
+export default connect()(MainPage);

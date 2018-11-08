@@ -1,0 +1,25 @@
+{ "metadata": 
+  [
+    {
+      "id": "1",
+      "uri": "/foobar/image1.png",
+      "fullName": "",
+      "fatherName": "John Lennon",
+      "motherName": "Yoko Ono"
+    },
+    {
+      "id": "2",
+      "uri": "/foobar/image1.png",
+      "fullName": "",
+      "fatherName": "Jason Fox",
+      "motherName": "Shawn Cicoria"
+    },
+    {
+      "id": "3",
+      "uri": "/foobar/image1.png",
+      "fullName": "",
+      "fatherName": "Annakin Skywalker",
+      "motherName": "Padmé Amidala"
+    }
+  ]
+}

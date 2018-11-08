@@ -1,0 +1,56 @@
+{
+  "images": [
+    {
+      "id": 1,
+      "FullName": "John Lennon",
+      "Gender": "Male",
+      "FatherName": "Lennon",
+      "MotherName": "Hughes",
+      "DateOfBirth": "1945-01-01",
+      "CountryOfBirth": "England",
+      "CountryOfOrigin": "England",
+      "Source": "SBS",
+      "ContentType": "TBD",
+      "ImageUri": "/images/foobar/image1.png"
+    },
+    {
+      "id": 2,
+      "FullName": "John Lennon",
+      "Gender": "Male",
+      "FatherName": "Lennon",
+      "MotherName": "Hughes",
+      "DateOfBirth": "1945-01-01",
+      "CountryOfBirth": "England",
+      "CountryOfOrigin": "England",
+      "Source": "SBS",
+      "ContentType": "TBD",
+      "ImageUri": "/images/foobar/image1.png"
+    },
+    {
+      "id": 3,
+      "FullName": "John Lennon",
+      "Gender": "Male",
+      "FatherName": "Lennon",
+      "MotherName": "Hughes",
+      "DateOfBirth": "1945-01-01",
+      "CountryOfBirth": "England",
+      "CountryOfOrigin": "England",
+      "Source": "SBS",
+      "ContentType": "TBD",
+      "ImageUri": "/images/foobar/image1.png"
+    },
+    {
+      "id": 4,
+      "FullName": "John Lennon",
+      "Gender": "Male",
+      "FatherName": "Lennon",
+      "MotherName": "Hughes",
+      "DateOfBirth": "1945-01-01",
+      "CountryOfBirth": "England",
+      "CountryOfOrigin": "England",
+      "Source": "SBS",
+      "ContentType": "TBD",
+      "ImageUri": "/images/foobar/image1.png"
+    }
+  ]
+}
