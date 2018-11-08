@@ -12,9 +12,16 @@
 # confidence.
 #
 # Options:
+#
+#   -h: print this help message and exit
+#
 #   -o output_path: store a summary result HTML file (default: no file)
-#   -n max_candidates: sets the maximum number of candidate matches to show (default: 10)
-#   -m match_mode: sets the similarity computation mode (default: matchPerson)
+#
+#   -n max_candidates: sets the maximum number of candidate matches to
+#                      show (default: 10)
+#
+#   -m match_mode: sets the similarity computation mode
+#                  (default: matchPerson)
 #
 
 set -o errexit -o pipefail
@@ -30,8 +37,10 @@ output_path=""
 max_candidates="10"
 match_mode="matchPerson"
 
-while getopts ":o:n:m:" opt; do
+while getopts ":o:n:m:h" opt; do
   case "${opt}" in
+    h) grep "^#" "$0" | sed "s/^# \?//" | grep -v "!/usr/bin/env bash"
+       exit 0 ;;
     o) output_path="${OPTARG}"
        if [[ ! -d "$(dirname "${output_path}")" ]]; then
          echo "Must set argument -o output_path to a valid path" >&2
