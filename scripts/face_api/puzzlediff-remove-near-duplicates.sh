@@ -3,7 +3,7 @@
 # Near duplicate image removal script.
 #
 # Usage:
-#   ./remove-near-duplicates.sh
+#   ./puzzlediff-remove-near-duplicates.sh
 #     (-t max_image_distance) (-c recheck_min_confidence)
 #     [summary_tsv]
 #

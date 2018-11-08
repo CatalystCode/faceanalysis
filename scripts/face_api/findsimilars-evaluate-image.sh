@@ -3,7 +3,7 @@
 # Evaluation script for FaceAPI's LargeFaceList+FindSimilar implementation.
 #
 # Usage:
-#   ./evaluate.sh
+#   ./findsimilars-evaluate-image.sh
 #     (-o output_path) (-n max_candidates) (-m match_mode)
 #     [faceApiUrl] [largeFaceListId] [inputImagePath]
 #
