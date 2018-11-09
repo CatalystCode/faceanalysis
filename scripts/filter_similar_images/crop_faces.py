@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import csv
+import glob
+import os
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 
 from facenet_sandberg import align_dataset
@@ -12,7 +14,18 @@ def crop_directory(tsv_file: str, config_file: str, input_dir: str, output_dir: 
         output_dir=output_dir,
         is_flat_dir=is_flat_dir)
     with open(tsv_file) as fd:
-        print(fd.read().replace(input_dir, output_dir))
+        rd = csv.reader(fd, delimiter="\t", quotechar='"')
+        for line in rd:
+            image1, image2, score = line
+            basename1 = os.path.basename(image1)
+            basename2 = os.path.basename(image2)
+            basename1, _ = os.path.splitext(basename1)
+            basename2, _ = os.path.splitext(basename2)
+            out_image1 = os.path.join(output_dir, basename1 + '.png')
+            out_image2 = os.path.join(output_dir, basename2 + '.png')
+            if os.path.exists(out_image1) and os.path.exists(out_image2):
+                output = '{}\t{}\t{}'.format(out_image1, out_image2, score)
+                print(output)
 
 
 def _cli() -> None:
