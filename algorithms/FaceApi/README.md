@@ -54,6 +54,19 @@ The container expects the directory structure to be laid out like so:
 
 The container will print to stdout the group ID of the trained FaceAPI model.
 
+You can also re-train a model by calling the container like so:
+
+```bash
+docker run \
+  -e FACE_API_KEY="<change-me>" \
+  -e FACE_API_REGION="<change-me>" \
+  -e FACE_API_PREDICTION_MODE="<change-me>" \
+  -e FACE_API_GROUP_ID="<change-me>" \
+  -v /path/to/training/images:/images \
+  face_api_container \
+  /images
+```
+
 ## Prediction
 
 After training a model and obtaining a group ID, you can check whether two

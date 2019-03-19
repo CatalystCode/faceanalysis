@@ -12,7 +12,7 @@ namespace FaceApi
     public interface IFaceIdentifier
     {
         Task<bool?> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2);
-        Task<string> Train(string trainSetRoot);
+        Task<string> Train(string trainSetRoot, string groupId);
     }
 
     abstract public class FaceIdentifierBase : IFaceIdentifier
@@ -36,7 +36,7 @@ namespace FaceApi
 
         abstract protected Task<TrainingStatus> GetTrainingStatus(string groupId);
         abstract protected Task<bool> Predict(string groupId, double matchThreshold, IList<Guid> faces1, IList<Guid> faces2);
-        abstract protected Task Train(string trainSetRoot, string groupId);
+        abstract protected Task<string> TrainInternal(string trainSetRoot, string groupId);
 
         public async Task<bool?> Predict(string groupId, double matchThreshold, string imagePath1, string imagePath2)
         {
@@ -52,11 +52,9 @@ namespace FaceApi
             return await Predict(groupId, matchThreshold, faces1, faces2);
         }
 
-        public async Task<string> Train(string trainSetRoot)
+        public async Task<string> Train(string trainSetRoot, string groupId)
         {
-            var groupId = Guid.NewGuid().ToString();
-
-            await Train(trainSetRoot, groupId);
+            groupId = await TrainInternal(trainSetRoot, groupId);
 
             var success = await WaitForTrainingToFinish(groupId);
             return success ? groupId : null;
@@ -124,13 +122,19 @@ namespace FaceApi
                 .ToHashSet();
         }
 
-        override protected async Task Train(string trainSetRoot, string groupId)
+        override protected async Task<string> TrainInternal(string trainSetRoot, string groupId)
         {
-            await RateLimit.Perform(() => Client.LargeFaceList.CreateAsync(groupId, groupId));
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                groupId = Guid.NewGuid().ToString();
+                await RateLimit.Perform(() => Client.LargeFaceList.CreateAsync(groupId, groupId));
+            }
 
             await AddFaces(groupId, trainSetRoot);
 
             await RateLimit.Perform(() => Client.LargeFaceList.TrainAsync(groupId));
+
+            return groupId;
         }
 
         override protected async Task<TrainingStatus> GetTrainingStatus(string groupId)
@@ -177,9 +181,13 @@ namespace FaceApi
         {
         }
 
-        override protected async Task Train(string trainSetRoot, string groupId)
+        override protected async Task<string> TrainInternal(string trainSetRoot, string groupId)
         {
-            await CreatePersonGroup(groupId);
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                groupId = Guid.NewGuid().ToString();
+                await CreatePersonGroup(groupId);
+            }
 
             var names = Directory.GetDirectories(trainSetRoot).Select(Path.GetFileName);
 
@@ -188,6 +196,8 @@ namespace FaceApi
             await AddFaces(groupId, trainSetRoot, people);
 
             await RateLimit.Perform(() => Client.LargePersonGroup.TrainAsync(groupId));
+
+            return groupId;
         }
 
         override protected async Task<TrainingStatus> GetTrainingStatus(string groupId)

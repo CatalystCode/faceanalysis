@@ -21,10 +21,10 @@ namespace FaceApi
                 return;
             }
 
-            if (settings.TryParseForTraining(out string trainSetRoot))
+            if (settings.TryParseForTraining(out string trainSetRoot, out string groupId))
             {
-                var trainedGroupId = await faceIdentifier.Train(trainSetRoot);
-                await Console.Out.WriteLineAsync(trainedGroupId ?? "Training failed");
+                groupId = await faceIdentifier.Train(trainSetRoot, groupId);
+                await Console.Out.WriteLineAsync(groupId ?? "Training failed");
             }
             else if (settings.TryParseForEvaluation(out string evaluationGroupId, out string pairsTxtPath, out string imagesRoot, out bool ignoreMissingEmbeddings))
             {
@@ -98,15 +98,17 @@ namespace FaceApi
             return true;
         }
 
-        public bool TryParseForTraining(out string trainSetRoot)
+        public bool TryParseForTraining(out string trainSetRoot, out string groupId)
         {
-            if (GroupId != null || Args.Length != 1 || !Directory.Exists(Args[0]))
+            if (Args.Length == 0 || !Directory.Exists(Args[0]))
             {
                 trainSetRoot = null;
+                groupId = GroupId;
                 return false;
             }
 
             trainSetRoot = Args[0];
+            groupId = GroupId;
             return true;
         }
 
