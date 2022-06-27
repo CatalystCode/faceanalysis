@@ -8,7 +8,7 @@ cognitive-face==1.4.2
 docker==3.4.1
 gunicorn==19.7.1
 itsdangerous==0.24
-mysql-connector-python==8.0.5
+mysql-connector-python==8.0.14
 numpy==1.14.0
 passlib==1.7.1
 
